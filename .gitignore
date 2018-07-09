@@ -2,6 +2,7 @@
 
 # QtCreator folders and files #
 #####################
+phoenix.pro
 phoenix.pro.user
 /phoenix-build-*
 /release*

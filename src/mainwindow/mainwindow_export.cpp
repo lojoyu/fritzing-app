@@ -1503,6 +1503,90 @@ void MainWindow::exportSpiceNetlist() {
     TextUtils::writeUtf8(fileName, output);
 }
 
+void MainWindow::exportNetlist(const QString & fileName) {
+	QHash<ConnectorItem *, int> indexer;
+	QList< QList<ConnectorItem *>* > netList;
+	this->m_currentGraphicsView->collectAllNets(indexer, netList, true, m_currentGraphicsView->boardLayers() > 1);
+
+	QDomDocument doc;
+	doc.setContent(QString("<?xml version='1.0' encoding='UTF-8'?>\n") + TextUtils::CreatedWithFritzingXmlComment);
+	QDomElement netlist = doc.createElement("netlist");
+	doc.appendChild(netlist);
+	netlist.setAttribute("sketch", QFileInfo(m_fwFilename).fileName());
+    netlist.setAttribute("date", QDateTime::currentDateTime().toString());
+
+	// TODO: filter out 'ignore' connectors
+
+	QList< QList<ConnectorItem *>* > deleteNets;
+	foreach (QList<ConnectorItem *> * net, netList) {
+		QList<ConnectorItem *> deleteItems;
+		foreach (ConnectorItem * connectorItem, *net) {
+			ErcData * ercData = connectorItem->connectorSharedErcData();
+			if (ercData == NULL) continue;
+
+			if (ercData->ignore() == ErcData::Always) {
+				deleteItems.append(connectorItem);
+			}
+			else if ((ercData->ignore() == ErcData::IfUnconnected) && (net->count() == 1)) {
+				deleteItems.append(connectorItem);
+			}
+		}
+
+		foreach (ConnectorItem * connectorItem, deleteItems) {
+			net->removeOne(connectorItem);
+		}
+		if (net->count() == 0) {
+			deleteNets.append(net);
+		}
+	}
+
+	foreach (QList<ConnectorItem *> * net, deleteNets) {
+		netList.removeOne(net);
+	}
+
+	foreach (QList<ConnectorItem *> * net, netList) {
+		QDomElement netElement = doc.createElement("net");
+		netlist.appendChild(netElement);
+		foreach (ConnectorItem * connectorItem, *net) {
+			QDomElement connector = doc.createElement("connector");
+			netElement.appendChild(connector);
+			connector.setAttribute("id", connectorItem->connectorSharedID());
+			connector.setAttribute("name", connectorItem->connectorSharedName());
+			QDomElement part = doc.createElement("part");
+			connector.appendChild(part);
+			ItemBase * itemBase = connectorItem->attachedTo();
+			part.setAttribute("id", itemBase->id());
+			part.setAttribute("label", itemBase->instanceTitle());
+			part.setAttribute("title", itemBase->title());
+			ErcData * ercData = connectorItem->connectorSharedErcData();
+			if (ercData != NULL) {
+				QDomElement erc = doc.createElement("erc");
+				if (ercData->writeToElement(erc, doc)) {
+					connector.appendChild(erc);
+				}
+			}
+		}
+	}
+
+	foreach (QList<ConnectorItem *> * net, netList) {
+		delete net;
+	}
+	netList.clear();
+	
+	FileProgressDialog * fileProgressDialog = exportProgress();
+    //DebugDialog::debug(fileExt + " selected to export");
+    //if(!alreadyHasExtension(fileName, netlistActionType)) {
+    //    fileName += netlistActionType;
+    //}
+
+    QFile fp( fileName );
+    fp.open(QIODevice::WriteOnly);
+    fp.write(doc.toByteArray());
+    fp.close();
+
+	delete fileProgressDialog;
+}
+
 void MainWindow::exportNetlist() {
 	QHash<ConnectorItem *, int> indexer;
 	QList< QList<ConnectorItem *>* > netList;

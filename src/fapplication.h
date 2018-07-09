@@ -175,6 +175,8 @@ protected:
 	void runGerberServiceAux();
 	void runSvgService();
 	void runSvgServiceAux();
+	void runNetlistService();
+	void runNetlistServiceAux();
 	void runPanelizerService();
 	void runInscriptionService();
 	void runExampleService();
@@ -203,6 +205,7 @@ protected:
 		ExampleService,
         DatabaseService,
         SvgService,
+        NetlistService,
         PortService,
         DRCService,
 		NoService

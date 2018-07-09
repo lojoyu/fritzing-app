@@ -474,6 +474,14 @@ bool FApplication::init() {
 			toRemove << i << i + 1;
 		}
 
+        if ((m_arguments[i].compare("-netlist", Qt::CaseInsensitive) == 0) ||
+            (m_arguments[i].compare("--netlist", Qt::CaseInsensitive) == 0)) {
+            m_serviceType = NetlistService;
+            DebugDialog::setEnabled(true);
+            m_outputFolder = m_arguments[i + 1];
+            toRemove << i << i + 1;
+        }
+
 		if ((m_arguments[i].compare("-port", Qt::CaseInsensitive) == 0) ||
 			(m_arguments[i].compare("--port", Qt::CaseInsensitive) == 0)) {
             DebugDialog::setEnabled(true);
@@ -877,6 +885,10 @@ int FApplication::serviceStartup() {
 			runSvgService();
 			return 0;
 
+        case NetlistService:
+            runNetlistService();
+            return 0;
+
 		case PanelizerService:
 			runPanelizerService();
 			return 0;
@@ -965,6 +977,38 @@ void FApplication::runSvgServiceAux()
 		mainWindow->setCloseSilently(true);
 		mainWindow->close();
 	}
+}
+
+void FApplication::runNetlistService()
+{
+    initService();
+    runNetlistServiceAux();
+}
+
+void FApplication::runNetlistServiceAux()
+{
+    
+    QDir dir(m_outputFolder);
+    QString s = dir.absolutePath();
+    QStringList filters;
+    filters << "*" + FritzingBundleExtension;
+    QStringList filenames = dir.entryList(filters, QDir::Files);
+    foreach (QString filename, filenames) {
+        QString filepath = dir.absoluteFilePath(filename);
+        MainWindow * mainWindow = openWindowForService(false, -1);
+        m_started = true;
+        
+        FolderUtils::setOpenSaveFolderAux(m_outputFolder);
+        if (mainWindow->loadWhich(filepath, false, false, false, "")) {
+            QFileInfo info(filepath);
+            QString fn = QString("%1.xml").arg(info.completeBaseName());
+            QString netlistPath = dir.absoluteFilePath(fn);
+            mainWindow->exportNetlist(netlistPath);
+
+        }
+        mainWindow->setCloseSilently(true);
+        mainWindow->close();
+    }
 }
 
 void FApplication::runDatabaseService()
