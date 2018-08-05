@@ -36,3 +36,4 @@ SOURCES += \
     src/sketch/sketchwidget.cpp \
     src/sketch/welcomeview.cpp \ 
     src/sketch/zoomablegraphicsview.cpp \
+    src/sketch/sketchwidget_autocomplete.cpp \

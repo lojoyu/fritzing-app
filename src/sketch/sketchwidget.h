@@ -46,6 +46,7 @@ $Date: 2013-04-28 14:14:07 +0200 (So, 28. Apr 2013) $
 #include "../viewlayer.h"
 #include "../utils/misc.h"
 #include "../commands.h"
+#include "../autocomplete/suggestion.h"
 
 struct ItemCount {
 	int selCount;
@@ -344,8 +345,14 @@ public:
     void testConnectors();
     void updateWires();
     void checkForReversedWires();
+    void setAutoComplete(bool);
+    Suggestion * getSuggestionFromHash(ItemBase * itemBase);
 
 protected:
+	ItemBase * AddSuggestion(long fromID, const QString & fromConnectorID, QString toModuleID, const QString & toConnectorID);
+    void testAdd(QString moduleID, ConnectorItem * to);
+    void getSuggestions();
+    void getSuggestions(ItemBase * itemBase);
     void dragEnterEvent(QDragEnterEvent *);
 	bool dragEnterEventAux(QDragEnterEvent *);
 	virtual bool canDropModelPart(ModelPart *);
@@ -354,6 +361,8 @@ protected:
     void dragMoveEvent(QDragMoveEvent *);
     void dropEvent(QDropEvent *);
 	virtual void mousePressEvent(QMouseEvent *);
+	void mousePressSuggestionEvent(QGraphicsItem *);
+	void mousePressSuggestionEvent(QMouseEvent *, QGraphicsItem *);
 	void mouseMoveEvent(QMouseEvent *);
 	void mouseReleaseEvent(QMouseEvent *);
     void mouseDoubleClickEvent (QMouseEvent *);
@@ -521,6 +530,7 @@ protected:
     void unsquashShapes();
     virtual bool updateOK(ConnectorItem *, ConnectorItem *);
     virtual void viewGeometryConversionHack(ViewGeometry &, ModelPart *);
+
 
 protected:
 	static bool lessThan(int a, int b);
@@ -759,6 +769,9 @@ protected:
     bool m_everZoomed;
     double m_ratsnestOpacity;
     double m_ratsnestWidth;
+    bool m_autoComplete;
+    QList< Suggestion *> m_suggestionList;
+    QHash<ItemBase *, Suggestion *> m_suggestionHash;
 
 public:
 	static ViewLayer::ViewLayerID defaultConnectorLayer(ViewLayer::ViewID viewId);

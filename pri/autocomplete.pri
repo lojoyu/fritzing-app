@@ -15,9 +15,12 @@
 
 
 HEADERS += \
-src/autocomplete/autocompleter.h
+src/autocomplete/autocompleter.h \
+src/autocomplete/suggestion.h
 
  
 SOURCES += \
-src/autocomplete/autocompleter.cpp
+src/autocomplete/autocompleter.cpp \
+src/autocomplete/suggestion.cpp
+
 

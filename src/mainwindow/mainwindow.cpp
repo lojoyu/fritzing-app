@@ -2168,7 +2168,6 @@ void MainWindow::swapSelectedMap(const QString & family, const QString & prop, Q
 		QString value = currPropsMap.value(key);
 		m_referenceModel->recordProperty(key, value);
 	}
-
 	QString moduleID = m_referenceModel->retrieveModuleIdWith(family, prop, true);
 	bool exactMatch = m_referenceModel->lastWasExactMatch();
 

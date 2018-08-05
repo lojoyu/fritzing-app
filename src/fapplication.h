@@ -181,6 +181,8 @@ protected:
 	void runInscriptionService();
 	void runExampleService();
 	void runExampleService(QDir &);
+	void runAutoCompleteService();
+	void runAutoCompleteServiceAux();
 	QList<class MainWindow *> recoverBackups();
 	QList<MainWindow *> loadLastOpenSketch();
 	void doLoadPrevious(MainWindow *);
@@ -208,6 +210,7 @@ protected:
         NetlistService,
         PortService,
         DRCService,
+        AutoCompleteService,
 		NoService
 	};
 
@@ -234,6 +237,7 @@ protected:
 	QString m_outputFolder;
 	QString m_portRootFolder;
 	QString m_panelFilename;
+	QString m_dictFolder;
 	QHash<QString, struct LockedFile *> m_lockedFiles;
     bool m_panelizerCustom;
     int m_portNumber;

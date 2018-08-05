@@ -54,10 +54,11 @@ public:
 	void removePart(const QString &moduleID);
     void removeParts();
     QList<ModelPart *> search(const QString & searchText, bool allowObsolete);
+    QList<ModelPart *> searchTitle(const QString & title, bool allowObsolete);
 
 	void clearPartHash();
 	void setOrdererChildren(QList<QObject*> children);
-    void search(ModelPart * modelPart, const QStringList & searchStrings, QList<ModelPart *> & modelParts, bool allowObsolete);
+    void search(ModelPart * modelPart, const QStringList & searchStrings, QList<ModelPart *> & modelParts, bool allowObsolete);    
     QList<ModelPart *> findContribNoBin();
     QList<ModelPart *> allParts();
 

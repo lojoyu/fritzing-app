@@ -488,6 +488,15 @@ void PaletteModel::setOrdererChildren(QList<QObject*> children) {
 	m_root->setOrderedChildren(children);
 }
 
+QList<ModelPart *> PaletteModel::searchTitle(const QString & title, bool allowObsolete) {
+	QList<ModelPart *> modelParts;
+
+	QStringList strings;
+	strings.append(title);
+    search(m_root, strings, modelParts, allowObsolete);
+    return modelParts;
+}
+
 QList<ModelPart *> PaletteModel::search(const QString & searchText, bool allowObsolete) {
 	QList<ModelPart *> modelParts;
 

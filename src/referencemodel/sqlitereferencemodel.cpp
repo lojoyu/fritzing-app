@@ -675,6 +675,37 @@ ModelPart *SqliteReferenceModel::retrieveModelPart(const QString &moduleID) {
 	return m_partHash.value(moduleID, NULL);
 }
 
+QString SqliteReferenceModel::retrieveModuleIdWithTitle(const QString &title){
+
+    QString queryStr =
+        "SELECT moduleID FROM parts part \n"
+        "WHERE part.title = :title"; // order by part.core desc"
+    
+    QSqlQuery query;
+    query.prepare(queryStr);
+
+    query.bindValue(":title",title.toLower().trimmed());
+
+    QString moduleId;
+    if(query.exec()) {
+        if(query.next()) {
+            moduleId =  query.value(0).toString(); //grab the first
+        }
+        //DebugDialog::debug("SQLITE: found: "+moduleId);
+    } else {
+        debugExec("couldn't retrieve part", query);
+    }
+
+    if(!moduleId.isEmpty()) {
+        m_lastWasExactMatch = true;
+        return moduleId;
+    } else {
+        return ___emptyString___;
+    }
+
+
+}
+
 QString SqliteReferenceModel::retrieveModuleIdWith(const QString &family, const QString &propertyName, bool closestMatch) {
 	QString moduleID = retrieveModuleId(family,m_recordedProperties,propertyName, closestMatch);
 	m_recordedProperties.clear();

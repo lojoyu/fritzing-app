@@ -749,7 +749,6 @@ ItemBase * SketchWidget::addItem(const QString & moduleID, ViewLayer::ViewLayerP
 
 ItemBase * SketchWidget::addItem(ModelPart * modelPart, ViewLayer::ViewLayerPlacement viewLayerPlacement, BaseCommand::CrossViewType crossViewType, const ViewGeometry & viewGeometry, long id, long modelIndex, AddDeleteItemCommand * originatingCommand)
 {
-	
 	ItemBase * newItem = NULL;
 	//if (checkAlreadyExists) {
 	//	newItem = findItem(id);
@@ -1817,6 +1816,7 @@ void SketchWidget::dragEnterEvent(QDragEnterEvent *event)
 		event->acceptProposedAction();
 	}
 	else if (event->mimeData()->hasFormat("application/x-dndsketchdata")) {
+		
 		if (event->source() != this) {
 			m_movingItem = NULL;
 			SketchWidget * other = dynamic_cast<SketchWidget *>(event->source());
@@ -1984,6 +1984,7 @@ void SketchWidget::dragMoveEvent(QDragMoveEvent *event)
 	//QGraphicsView::dragMoveEvent(event);   // we override QGraphicsView::dragEnterEvent so don't call the subclass dragMoveEvent here
 }
 
+
 void SketchWidget::dragMoveHighlightConnector(QPoint eventPos) {
 	if (m_droppingItem == NULL) return;
 
@@ -2017,14 +2018,17 @@ void SketchWidget::dropEvent(QDropEvent *event)
 
     if (event->mimeData()->hasFormat("application/x-dnditemdata")) {
 		dropItemEvent(event);
+
     }
 	else if (event->mimeData()->hasFormat("application/x-dndsketchdata")) {
 		if (m_movingItem) {
 			delete m_movingItem;
 			m_movingItem = NULL;
 		}
-
-		ConnectorItem::clearEqualPotentialDisplay();
+        if (m_savedItems.count() > 0) {
+        	mousePressSuggestionEvent(m_savedItems.values().at(0));
+        }
+        ConnectorItem::clearEqualPotentialDisplay();
 		if (event->source() == this) {
             // Item was dragged from this same window/view
 			checkMoved(false);
@@ -2037,7 +2041,6 @@ void SketchWidget::dropEvent(QDropEvent *event)
 			if (other == NULL) {
 				throw "drag and drop from unknown source";
 			}
-
 			ItemBase * ref = other->m_moveReferenceItem;
 			other->copyDrop();
 			QPointF startLocal = other->mapFromGlobal(QPoint(other->m_mousePressGlobalPos.x(), other->m_mousePressGlobalPos.y()));
@@ -2058,6 +2061,7 @@ void SketchWidget::dropEvent(QDropEvent *event)
 	}
 
 	DebugDialog::debug("after drop event");
+	
 
 }
 
@@ -2116,13 +2120,15 @@ void SketchWidget::dropItemEvent(QDropEvent *event) {
 	}
 
 	bool gotConnector = false;
-
+	ConnectorItem * firstConnectorTo = NULL;
 	// jrc: 24 aug 2010: don't see why restoring color on dropped item is necessary
 	//QList<ConnectorItem *> connectorItems;
 	foreach (ConnectorItem * connectorItem, m_droppingItem->cachedConnectorItems()) {
 		//connectorItem->setMarked(false);
 		//connectorItems.append(connectorItem);
 		ConnectorItem * to = connectorItem->overConnectorItem();
+
+		if (firstConnectorTo == NULL) firstConnectorTo = to;
 		if (to != NULL) {
 			to->connectorHover(to->attachedTo(), false);
 			connectorItem->setOverConnectorItem(NULL);   // clean up
@@ -2131,12 +2137,16 @@ void SketchWidget::dropItemEvent(QDropEvent *event) {
 		}
 		//connectorItem->clearConnectorHover();
 	}
+
+	getSuggestions();
+	
 	//foreach (ConnectorItem * connectorItem, connectorItems) {
 		//if (!connectorItem->marked()) {
 			//connectorItem->restoreColor(false, 0, true);
 		//}
 	//}
 	//m_droppingItem->clearConnectorHover();
+    DebugDialog::debug(QString("DropItemEvent:%1").arg(m_droppingItem->id()));
 
 	clearTemporaries();
 
@@ -2155,10 +2165,10 @@ void SketchWidget::dropItemEvent(QDropEvent *event) {
         m_undoStack->waitPush(parentCommand, 10);
     }
 
-
     event->acceptProposedAction();
 
 	emit dropSignal(event->pos());
+
 }
 
 SelectItemCommand* SketchWidget::stackSelectionState(bool pushIt, QUndoCommand * parentCommand) {
@@ -2354,6 +2364,7 @@ void SketchWidget::mousePressEvent(QMouseEvent *event)
 
 	Wire * wire = dynamic_cast<Wire *>(item);
 	if ((event->button() == Qt::LeftButton) && (wire != NULL)) {
+		DebugDialog::debug("leftButton & wire");
 		if (canChainWire(wire) && wire->hasConnections()) {
 			if (canDragWire(wire) && ((event->modifiers() & altOrMetaModifier()) != 0)) {
 				prepDragWire(wire);
@@ -2380,6 +2391,8 @@ void SketchWidget::mousePressEvent(QMouseEvent *event)
 	}
 
     if (event->button() == Qt::LeftButton) {
+
+    	DebugDialog::debug("leftButton");
 	    prepMove(itemBase ? itemBase : dynamic_cast<ItemBase *>(item->parentItem()), (event->modifiers() & altOrMetaModifier()) != 0, true);
 	    if (m_alignToGrid && (itemBase == NULL) && (event->modifiers() == Qt::NoModifier)) {
 		    Wire * wire = dynamic_cast<Wire *>(item->parentItem());
@@ -2395,7 +2408,13 @@ void SketchWidget::mousePressEvent(QMouseEvent *event)
 	    m_moveReferenceItem = m_savedItems.count() > 0 ? m_savedItems.values().at(0) : NULL;
 
 	    setupAutoscroll(true);
+	    //mousePressSuggestionEvent(item);
+
+		
     }
+
+
+    
 }
 
 void SketchWidget::prepMove(ItemBase * originatingItem, bool rubberBandLegEnabled, bool includeRatsnest) {
@@ -3205,9 +3224,11 @@ void SketchWidget::findConnectorsUnder(ItemBase * item) {
 }
 
 void SketchWidget::mouseReleaseEvent(QMouseEvent *event) {
-	//setRenderHint(QPainter::Antialiasing, true);
-
-    //DebugDialog::debug("sketch mouse release event");
+	//setRenderHint(QPainter::Antialiasing, true);   
+	if (m_savedItems.count() > 0) {
+		DebugDialog::debug(QString("MouseReleaseEvent: %1").arg(m_savedItems.keys().at(0)));
+		mousePressSuggestionEvent(m_savedItems.values().at(0));
+	}
 
 	m_draggingBendpoint = false;
 	if (m_movingByArrow) return;
@@ -3304,6 +3325,8 @@ void SketchWidget::mouseReleaseEvent(QMouseEvent *event) {
 	}
 	m_savedItems.clear();
 	m_savedWires.clear();
+
+	
 }
 
 bool SketchWidget::checkMoved(bool wait)
@@ -4538,7 +4561,6 @@ ViewLayer::ViewLayerID SketchWidget::getNoteViewLayerID() {
 	return m_noteViewLayerID;
 }
 
-
 void SketchWidget::mousePressConnectorEvent(ConnectorItem * connectorItem, QGraphicsSceneMouseEvent * event) {
 
 	ModelPart * wireModel = m_referenceModel->retrieveModelPart(ModuleIDNames::WireModuleIDName);
@@ -4586,6 +4608,54 @@ void SketchWidget::mousePressConnectorEvent(ConnectorItem * connectorItem, QGrap
 		m_connectorDragWire->setColorString(m_lastColorSelected, m_connectorDragWire->opacity(), false);
 	}
 }
+/*
+void SketchWidget::testAddWire(ConnectorItem * connectorItem, QGraphicsSceneMouseEvent * event) {
+
+	ModelPart * wireModel = m_referenceModel->retrieveModelPart(ModuleIDNames::WireModuleIDName);
+	if (wireModel == NULL) return;
+
+	m_tempDragWireCommand = m_holdingSelectItemCommand;
+	m_holdingSelectItemCommand = NULL;
+	clearHoldingSelectItem();
+	
+
+	// make sure wire layer is visible
+	ViewLayer::ViewLayerID viewLayerID = getDragWireViewLayerID(connectorItem);
+	ViewLayer * viewLayer = m_viewLayers.value(viewLayerID);
+	if (viewLayer != NULL && !viewLayer->visible()) {
+		setLayerVisible(viewLayer, true, true);
+        emit updateLayerMenuSignal();
+	}
+
+
+	ViewGeometry viewGeometry;
+   	QPointF p = QPointF(connectorItem->mapToScene(event->pos()));
+   	viewGeometry.setLoc(p);
+	viewGeometry.setLine(QLineF(0,0,0,0));
+
+	m_connectorDragConnector = connectorItem;
+	m_connectorDragWire = createTempWireForDragging(NULL, wireModel, connectorItem, viewGeometry, ViewLayer::UnknownPlacement);
+	if (m_connectorDragWire == NULL) {
+		clearDragWireTempCommand();
+		return;
+	}
+
+	m_connectorDragWire->debugInfo("creating connector drag wire");
+
+	setupAutoscroll(true);
+
+	// give connector item the mouse, so wire doesn't get mouse moved events
+	m_connectorDragWire->setVisible(true);
+	m_connectorDragWire->grabMouse();
+    unsquashShapes();
+	//m_connectorDragWire->debugInfo("grabbing mouse 2");
+	m_connectorDragWire->initDragEnd(m_connectorDragWire->connector0(), event->scenePos());
+	m_connectorDragConnector->tempConnectTo(m_connectorDragWire->connector1(), false);
+	m_connectorDragWire->connector1()->tempConnectTo(m_connectorDragConnector, false);
+	if (!m_lastColorSelected.isEmpty()) {
+		m_connectorDragWire->setColorString(m_lastColorSelected, m_connectorDragWire->opacity(), false);
+	}
+}*/
 
 void SketchWidget::rotateX(double degrees, bool rubberBandLegEnabled, ItemBase * originatingItem) 
 {
@@ -10127,6 +10197,7 @@ void SketchWidget::testConnectors()
     m_undoStack->waitPush(parentCommand, PropChangeDelay);
 }
 
+
 void SketchWidget::updateWires() {
     QList<ConnectorItem *> already;
     ViewGeometry::WireFlag traceFlag = getTraceFlag();
@@ -10214,3 +10285,5 @@ void SketchWidget::checkForReversedWires() {
         }
     }
 }
+
+

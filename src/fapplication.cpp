@@ -68,6 +68,7 @@ $Date: 2013-04-19 12:51:22 +0200 (Fr, 19. Apr 2013) $
 #include "help/firsttimehelpdialog.h"
 #include "help/aboutbox.h"
 #include "version/partschecker.h"
+#include "autocomplete/autocompleter.h"
 
 // dependency injection :P
 #include "referencemodel/sqlitereferencemodel.h"
@@ -90,6 +91,8 @@ $Date: 2013-04-19 12:51:22 +0200 (Fr, 19. Apr 2013) $
 #include <QTemporaryFile>
 #include <QDir>
 #include <time.h>
+#include <QJsonParseError>
+#include <QJsonDocument>
 
 #ifdef LINUX_32
 #define PLATFORM_NAME "linux-32bit"
@@ -557,6 +560,16 @@ bool FApplication::init() {
 			toRemove << i << i + 1;
 		}
 
+        if ((m_arguments[i].compare("-auto", Qt::CaseInsensitive) == 0) ||
+            (m_arguments[i].compare("-autocomplete", Qt::CaseInsensitive) == 0) ||
+            (m_arguments[i].compare("--autocomplete", Qt::CaseInsensitive) == 0)) {
+            m_serviceType = AutoCompleteService;
+            DebugDialog::setEnabled(true);
+            m_outputFolder = " ";
+            m_dictFolder = m_arguments[i + 1];              // change variable name?
+            toRemove << i << i + 1;
+        }
+
 	}
 
 	while (toRemove.count() > 0) {
@@ -901,6 +914,14 @@ int FApplication::serviceStartup() {
 			runExampleService();
 			return 0;
 
+        case AutoCompleteService:
+            {
+                int result = startup();
+                if (result != 0) return 0;
+            }
+            runAutoCompleteService();
+            return 1;
+
 		default:
 			DebugDialog::debug("unknown service");
 			return -1;
@@ -1177,6 +1198,97 @@ void FApplication::runKicadSchematicService() {
 		}
 	}
 }
+
+void FApplication::runAutoCompleteService() {
+    
+    runAutoCompleteServiceAux();
+}
+
+void FApplication::runAutoCompleteServiceAux() {
+    CursorMaster::initCursors();
+
+    //TODO: change to SIGNAL/SLOT 
+    //no setAutoComplete called when new MainWindow
+    foreach (MainWindow * mw, orderedTopLevelMainWindows()) {
+        foreach (SketchWidget * sketchWidget, mw->sketchWidgets()) {
+            sketchWidget->setAutoComplete(true);
+        }    
+    }
+    //TODO: parse dict
+    
+    QFile file;
+
+    QDir dir(m_dictFolder);
+    //QString filePath = QString("%1/test.json").arg(dir.absolutePath());
+    //QString filename = "test.json";
+    //file.setFileName(filePath);
+    //set_all_id_add_fritzing_2
+    file.setFileName("/Users/lojoyu/Documents/HCI/autocomplete/Fritzing/set_all_id_add_fritzing_2.json");
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)){
+        DebugDialog::debug("file Not Open");
+        return;
+    }
+    
+    QJsonParseError error;
+    //UTF8
+    QJsonDocument jsonDocument = QJsonDocument::fromJson(file.readAll(), &error);
+    if (error.error == QJsonParseError::NoError) {
+        if (jsonDocument.isObject()) {
+            QVariantMap result = jsonDocument.toVariant().toMap();
+            AutoCompleter::setTerminalMap(result);
+
+        }
+    } else {
+        qFatal(error.errorString().toUtf8().constData());
+        exit(1);
+    }
+
+    QJsonParseError error2;
+    QFile fileHistory;
+    fileHistory.setFileName("/Users/lojoyu/Documents/HCI/autocomplete/Fritzing/history_all_id.json");
+    if (!fileHistory.open(QIODevice::ReadOnly | QIODevice::Text)){
+        DebugDialog::debug("file Not Open");
+        return;
+    }
+    
+    //UTF8
+    QJsonDocument historyJson = QJsonDocument::fromJson(fileHistory.readAll(), &error2);
+    if (error2.error == QJsonParseError::NoError) {
+        if (historyJson.isObject()) {
+            QVariantMap result = historyJson.toVariant().toMap();
+            AutoCompleter::setHistoryMap(result);
+        }
+    } else {
+        DebugDialog::debug("history");
+        qFatal(error.errorString().toUtf8().constData());
+        exit(1);
+    }
+    
+    //QJsonParseError error;
+    QFile datasheet;
+    datasheet.setFileName("/Users/lojoyu/Documents/HCI/autocomplete/Fritzing/datasheet.json");
+    if (!datasheet.open(QIODevice::ReadOnly | QIODevice::Text)){
+        DebugDialog::debug("file Not Open");
+        return;
+    }
+    
+    //UTF8
+    QJsonDocument datasheetJson = QJsonDocument::fromJson(datasheet.readAll(), &error);
+    if (error.error == QJsonParseError::NoError) {
+        if (datasheetJson.isObject()) {
+            QVariantMap result = datasheetJson.toVariant().toMap();
+            AutoCompleter::setDatasheetMap(result);
+        }
+    } else {
+        qFatal(error.errorString().toUtf8().constData());
+        exit(1);
+    }
+
+    //return???
+
+}
+
+
 
 int FApplication::startup()
 {

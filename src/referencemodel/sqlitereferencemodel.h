@@ -59,6 +59,7 @@ class SqliteReferenceModel : public ReferenceModel {
 		QStringList propValues(const QString &family, const QString &propName, bool distinct);
 		QMultiHash<QString, QString> allPropValues(const QString &family, const QString &propName);
 		void recordProperty(const QString &name, const QString &value);
+		QString retrieveModuleIdWithTitle(const QString &title);
 		QString retrieveModuleIdWith(const QString &family, const QString &propertyName, bool closestMatch);
 		QString retrieveModuleId(const QString &family, const QMultiHash<QString /*name*/, QString /*value*/> &properties, const QString &propertyName, bool closestMatch);
 		bool lastWasExactMatch();
