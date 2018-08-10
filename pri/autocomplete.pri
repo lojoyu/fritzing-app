@@ -16,11 +16,13 @@
 
 HEADERS += \
 src/autocomplete/autocompleter.h \
-src/autocomplete/suggestion.h
+src/autocomplete/autocompletedbmanager.h \
+src/autocomplete/modelset.h
 
  
 SOURCES += \
 src/autocomplete/autocompleter.cpp \
-src/autocomplete/suggestion.cpp
+src/autocomplete/autocompletedbmanager.cpp \
+src/autocomplete/modelset.cpp
 
 

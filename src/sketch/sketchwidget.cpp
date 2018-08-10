@@ -2025,9 +2025,7 @@ void SketchWidget::dropEvent(QDropEvent *event)
 			delete m_movingItem;
 			m_movingItem = NULL;
 		}
-        if (m_savedItems.count() > 0) {
-        	mousePressSuggestionEvent(m_savedItems.values().at(0));
-        }
+
         ConnectorItem::clearEqualPotentialDisplay();
 		if (event->source() == this) {
             // Item was dragged from this same window/view
@@ -2138,7 +2136,8 @@ void SketchWidget::dropItemEvent(QDropEvent *event) {
 		//connectorItem->clearConnectorHover();
 	}
 
-	getSuggestions();
+	//autocomplete
+    if (m_autoComplete) AutoCompleter::getSuggestionSet(m_droppingItem, this);
 	
 	//foreach (ConnectorItem * connectorItem, connectorItems) {
 		//if (!connectorItem->marked()) {
@@ -2408,12 +2407,10 @@ void SketchWidget::mousePressEvent(QMouseEvent *event)
 	    m_moveReferenceItem = m_savedItems.count() > 0 ? m_savedItems.values().at(0) : NULL;
 
 	    setupAutoscroll(true);
-	    //mousePressSuggestionEvent(item);
-
 		
     }
 
-
+    checkMousePressSuggestion(item);
     
 }
 
@@ -3225,10 +3222,8 @@ void SketchWidget::findConnectorsUnder(ItemBase * item) {
 
 void SketchWidget::mouseReleaseEvent(QMouseEvent *event) {
 	//setRenderHint(QPainter::Antialiasing, true);   
-	if (m_savedItems.count() > 0) {
-		DebugDialog::debug(QString("MouseReleaseEvent: %1").arg(m_savedItems.keys().at(0)));
-		mousePressSuggestionEvent(m_savedItems.values().at(0));
-	}
+
+    checkSelectSuggestion();
 
 	m_draggingBendpoint = false;
 	if (m_movingByArrow) return;

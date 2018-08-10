@@ -43,7 +43,9 @@ $Date: 2013-04-28 13:51:10 +0200 (So, 28. Apr 2013) $
 #include "../viewgeometry.h"
 #include "../viewlayer.h"
 #include "../utils/misc.h"
+//#include "../autocomplete/modelset.h"
 
+class ModelSet;
 class ConnectorItem;
 
 typedef QMultiHash<ConnectorItem *, ConnectorItem *> ConnectorPairHash;
@@ -401,6 +403,14 @@ public:
     static void renderOne(QDomDocument *, QImage *, const QRectF & renderRect);
 
 
+    //autocomplete
+
+public:
+    void setModelSet(ModelSet * modelset);
+    ModelSet * modelSet();
+
+protected:
+    ModelSet * m_modelset;
 
 };
 

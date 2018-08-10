@@ -46,7 +46,9 @@ $Date: 2013-04-28 14:14:07 +0200 (So, 28. Apr 2013) $
 #include "../viewlayer.h"
 #include "../utils/misc.h"
 #include "../commands.h"
-#include "../autocomplete/suggestion.h"
+#include "../autocomplete/modelset.h"
+#include "../autocomplete/autocompleter.h"
+
 
 struct ItemCount {
 	int selCount;
@@ -346,13 +348,9 @@ public:
     void updateWires();
     void checkForReversedWires();
     void setAutoComplete(bool);
-    Suggestion * getSuggestionFromHash(ItemBase * itemBase);
 
 protected:
-	ItemBase * AddSuggestion(long fromID, const QString & fromConnectorID, QString toModuleID, const QString & toConnectorID);
-    void testAdd(QString moduleID, ConnectorItem * to);
-    void getSuggestions();
-    void getSuggestions(ItemBase * itemBase);
+	
     void dragEnterEvent(QDragEnterEvent *);
 	bool dragEnterEventAux(QDragEnterEvent *);
 	virtual bool canDropModelPart(ModelPart *);
@@ -769,9 +767,7 @@ protected:
     bool m_everZoomed;
     double m_ratsnestOpacity;
     double m_ratsnestWidth;
-    bool m_autoComplete;
-    QList< Suggestion *> m_suggestionList;
-    QHash<ItemBase *, Suggestion *> m_suggestionHash;
+    
 
 public:
 	static ViewLayer::ViewLayerID defaultConnectorLayer(ViewLayer::ViewID viewId);
@@ -781,6 +777,32 @@ public:
 protected:
 	static const int MoveAutoScrollThreshold;
 	static const int DragAutoScrollThreshold;
+
+
+///for autocomplete
+public slots:
+    void addModelSet(ModelSet *, bool transparent);
+    void addSetToSet(ModelSet * modelSet, SetConnection * setconnection, bool transparent);
+
+protected:
+    void addSetConnection(SetConnection * setconnection, bool transparent);
+    ItemBase * addSetItem(QPointF pos, QString & toModuleID, bool transparent);
+    ItemBase * addSetItem(ItemBase * fromItem, const QString & fromConnectorID, QString toModuleID, const QString & toConnectorID, bool transparent);
+    ItemBase * addSetWire(ItemBase * fromItem, const QString & fromConnectorID, ItemBase * toItem, const QString & toConnectorID, bool transparent);
+    void removePrevModelSet();
+    void checkMousePressSuggestion(QGraphicsItem * item);
+    void checkSelectSuggestion();
+
+    
+
+protected:
+	bool m_autoComplete;
+	ModelSet * m_prevModelSet = NULL;
+    ModelSet * m_pressModelSet = NULL;
+	SetConnection * m_prevSetConnection = NULL;
+	QList<ModelSet *> m_savedModelSet;
+
+
 };
 
 #endif

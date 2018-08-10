@@ -2468,3 +2468,11 @@ void ItemBase::setInspectorTitle(const QString & oldText, const QString & newTex
 	DebugDialog::debug(QString("set instance title to %1").arg(newText));
 	infoGraphicsView->setInstanceTitle(id(), oldText, newText, true, false);
 }
+
+void ItemBase::setModelSet(ModelSet * modelset) {
+    m_modelset = modelset;
+}
+
+ModelSet * ItemBase::modelSet() {
+    return m_modelset;
+}

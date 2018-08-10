@@ -237,7 +237,7 @@ protected:
 	QString m_outputFolder;
 	QString m_portRootFolder;
 	QString m_panelFilename;
-	QString m_dictFolder;
+	QString m_autocompleteDB;
 	QHash<QString, struct LockedFile *> m_lockedFiles;
     bool m_panelizerCustom;
     int m_portNumber;
