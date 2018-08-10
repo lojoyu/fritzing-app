@@ -18,6 +18,7 @@ public:
 	AutoCompleter();
 	~AutoCompleter();
 	//new
+    static AutoCompleter* getAutoCompleter();
     static void setDatabasePath(const QString & databasename);
     static void getSuggestionSet(ItemBase * item, SketchWidget * sketchWidget);
     static void getSuggestionNext(ModelSet * modelset, SketchWidget * sketchWidget);

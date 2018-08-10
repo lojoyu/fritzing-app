@@ -47,6 +47,14 @@ AutoCompleter::~AutoCompleter() {
 
 }
 
+
+AutoCompleter * AutoCompleter::getAutoCompleter() {
+    if (singleton == NULL) {
+        singleton = new AutoCompleter();
+    }
+    return singleton;
+}
+
 void AutoCompleter::setDatabasePath(const QString & databasename) {
     AutocompleteDBManager::loadDB(databasename);
 }
@@ -78,6 +86,8 @@ void AutoCompleter::getSuggestionSetSelf(ItemBase * item, SketchWidget * sketchW
     QString title = item->title();
     QList<QMap<QString, QVariant> *> resultList = AutocompleteDBManager::getModelSet(title);
     QList<ModelSet *> modelSetList = mapListToModelSet(item, sketchWidget, resultList);
+    
+    //TODO: emit SIGNAL (modelSetList)
     if (modelSetList.length() > 0) sketchWidget->addModelSet(modelSetList[0], true);
     //getSuggestionNextSelf(modelSetList[0], sketchWidget);
     //return modelSetList;
@@ -151,6 +161,8 @@ void AutoCompleter::getSuggestionNextSelf(ModelSet * modelset, SketchWidget * sk
     QList<ModelSet *> toModelsetList = mapListToModelSet(NULL, sketchWidget, modelsetMapList);
     QList<SetConnection *> setConnectionList = mapListToSetConnection(modelset, toModelsetList, sketchWidget, connectionList);
     
+    // TODO: emit Signal (toModelsetList, setConnectionList);
+
     sketchWidget->addSetToSet(toModelsetList[0], setConnectionList[0], true);
 
 }
