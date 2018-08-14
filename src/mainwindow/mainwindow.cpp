@@ -491,6 +491,8 @@ void MainWindow::init(ReferenceModel *referenceModel, bool lockFiles) {
     m_undoView->setGroup(m_undoGroup);
     m_undoGroup->setActiveStack(m_undoStack);
 
+    initRecommendList(m_breadboardGraphicsView);
+
     initDock();
     initMenus();
     moreInitDock();
@@ -552,7 +554,7 @@ void MainWindow::init(ReferenceModel *referenceModel, bool lockFiles) {
 
 	if (m_fileProgressDialog) {
 		m_fileProgressDialog->setValue(98);
-	}
+    }
 
 }
 

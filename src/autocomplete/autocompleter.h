@@ -6,6 +6,7 @@
 
 #include "../sketch/sketchwidget.h"
 #include "modelset.h"
+#include "../fritzing-app/src/mainwindow/mainwindow.h"
 
 
 class AutoCompleter : public QObject
@@ -24,6 +25,10 @@ public:
     static void getSuggestionNext(ModelSet * modelset, SketchWidget * sketchWidget);
 	static void test();
 
+signals:
+    void NextSelf_signal(QList<ModelSet *> , QList<SetConnection *>);
+    void SetSelf_signal(QList<ModelSet *>);
+
 protected:
     void getSuggestionSetSelf(ItemBase * item, SketchWidget * sketchWidget);
     void getSuggestionNextSelf(ModelSet * modelset, SketchWidget * sketchWidget);
@@ -41,6 +46,8 @@ protected:
 	static AutoCompleter* singleton;
 	class SketchWidget* m_sketchwidget;
     QHash<QString, QString> m_titleToModuleID;
+    class MainWindow * mw;
+
 	
 };
 

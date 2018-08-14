@@ -63,6 +63,8 @@ void MainWindow::createDockWindows()
 	widget->setMinimumHeight(0);
 	widget->setMaximumHeight(0);
 
+    // makeDock(tr("Recommand List"), Recommendlist, 30, 30);
+
 	makeDock(BinManager::Title, m_binManager, PartsBinMinHeight, PartsBinHeightDefault/*, Qt::LeftDockWidgetArea*/);
 
     makeDock(tr("Inspector"), m_infoView, InfoViewMinHeight, InfoViewHeightDefault);
