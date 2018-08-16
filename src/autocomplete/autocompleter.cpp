@@ -47,6 +47,14 @@ AutoCompleter::~AutoCompleter() {
 
 }
 
+
+AutoCompleter * AutoCompleter::getAutoCompleter() {
+    if (singleton == NULL) {
+        singleton = new AutoCompleter();
+    }
+    return singleton;
+}
+
 void AutoCompleter::setDatabasePath(const QString & databasename) {
     AutocompleteDBManager::loadDB(databasename);
 }
@@ -84,11 +92,10 @@ void AutoCompleter::getSuggestionSetSelf(ItemBase * item, SketchWidget * sketchW
         if (modelSetList.length() == 1 && modelSetList[0]->single()){
             getSuggestionNextSelf(modelSetList[0], sketchWidget);
         } else {
-            sketchWidget->addModelSet(modelSetList[0], true);
+            mw->setmodelSetList(modelSetList);
+            //sketchWidget->addModelSet(modelSetList[0], true);
         }
     }
-    //getSuggestionNextSelf(modelSetList[0], sketchWidget);
-    //return modelSetList;
 }
 
 void AutoCompleter::mapListToModelSet(ItemBase * keyItem, SketchWidget * sketchWidget, QList<QMap<QString, QVariant> *> & resultList, QList<QSharedPointer<ModelSet>> & modelSetList) {
@@ -174,6 +181,7 @@ void AutoCompleter::getSuggestionNextSelf(QSharedPointer<ModelSet> modelset, Ske
     }
     QList<QMap<QString, QVariant> *> connectionList = AutocompleteDBManager::getConnectionsByID(idList);
     QList<QMap<QString, QVariant> *> modelsetMapList = AutocompleteDBManager::getModelSetsByID(moduleList);
+<<<<<<< HEAD
     QList<QSharedPointer<ModelSet>> toModelsetList;
     QList<QSharedPointer<SetConnection>> setConnectionList;
     mapListToModelSet(NULL, sketchWidget, modelsetMapList, toModelsetList);
@@ -184,7 +192,8 @@ void AutoCompleter::getSuggestionNextSelf(QSharedPointer<ModelSet> modelset, Ske
     connectionList.clear();
     modelsetMapList.clear();
 
-    sketchWidget->addSetToSet(toModelsetList[0], setConnectionList[0], true);
+    mw->setTosetList(toModelsetList, setConnectionList);
+    //sketchWidget->addSetToSet(toModelsetList[0], setConnectionList[0], true);
 
 }
 

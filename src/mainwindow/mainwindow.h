@@ -44,6 +44,7 @@ $Date: 2013-04-28 14:14:07 +0200 (So, 28. Apr 2013) $
 #include <QStyle>
 #include <QStylePainter>
 #include <QPrinter>
+#include <QListWidget>
 
 #include "fritzingwindow.h"
 #include "sketchareawidget.h"
@@ -51,6 +52,8 @@ $Date: 2013-04-28 14:14:07 +0200 (So, 28. Apr 2013) $
 #include "../program/programwindow.h"
 #include "../svg/svg2gerber.h"
 #include "../routingstatus.h"
+#include "../fritzing-app/src/autocomplete/modelset.h"
+#include "../fritzing-app/src/autocomplete/autocompleter.h"
 
 QT_BEGIN_NAMESPACE
 class QAction;
@@ -106,11 +109,13 @@ public:
 	QMap<QString, QString> propsMap();
 	ItemBase * itemBase();
 
+
 protected:
 	QString m_family;
 	QString m_prop;
 	QMap<QString, QString> m_propsMap;
 	QPointer <ItemBase> m_itemBase;
+
 };
 
 struct GridSizeThing
@@ -169,6 +174,7 @@ class MainWindow : public FritzingWindow
 public:
     MainWindow(class ReferenceModel *referenceModel, QWidget * parent);
     MainWindow(QFile & fileToLoad);
+    MainWindow();
 	~MainWindow();
 
     void mainLoad(const QString & fileName, const QString & displayName, bool checkObsolete);
@@ -235,6 +241,14 @@ public:
     void setFireQuoteDelay(int);
     void setInitialTab(int);
     void noSchematicConversion();
+    void setTosetList(QList<ModelSet *> toModelsetList, QList<SetConnection *> setConnectionList);
+    void setmodelSetList(QList<ModelSet *> modelSetList);
+    QList<ModelSet *> m_modelSetList ;
+    QList<ModelSet *> m_toModelsetList ;
+    QList<SetConnection *> m_setConnectionList ;
+    SketchWidget * sk ;
+
+    QPointer <QListWidget> Recommendlist ;
 
 public:
 	static void initNames();
@@ -274,7 +288,14 @@ public slots:
     void oldSchematicsSlot(const QString & filename, bool & useOldSchematics);
     void showWelcomeView();
 
+    void slotOnItemEntered(QListWidgetItem*) ;
+    void CurrentRowItem(int) ;
+    void addRecommendList(QList<ModelSet *>, QList<SetConnection *>);
+    void addmodelSetList(QList<ModelSet *>);
+
 protected slots:
+
+
 	void mainLoad();
 	void revert();
 	void openRecentOrExampleFile();
@@ -620,6 +641,7 @@ protected:
 
     // dock management
 	void createDockWindows();
+	void initRecommendList( SketchWidget * sketchWidget );
 	void dontKeepMargins();
 	class FDockWidget * makeDock(const QString & title, QWidget * widget, int dockMinHeight, int dockDefaultHeight, Qt::DockWidgetArea area = Qt::RightDockWidgetArea, DockFactory dockFactory = NULL);
 	class FDockWidget * dockIt(FDockWidget* dock, int dockMinHeight, int dockDefaultHeight, Qt::DockWidgetArea area = Qt::RightDockWidgetArea);
@@ -648,6 +670,7 @@ protected:
 	static void setAutosave(int, bool);
 
 protected:
+    
 
 	QUndoGroup *m_undoGroup;
 	QUndoView *m_undoView;
