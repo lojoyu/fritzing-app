@@ -406,11 +406,11 @@ public:
     //autocomplete
 
 public:
-    void setModelSet(ModelSet * modelset);
-    ModelSet * modelSet();
+    void setModelSet(QSharedPointer<ModelSet> modelset);
+    QSharedPointer<ModelSet> modelSet();
 
 protected:
-    ModelSet * m_modelset;
+    QSharedPointer<ModelSet> m_modelset;
 
 };
 

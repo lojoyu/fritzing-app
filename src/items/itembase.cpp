@@ -46,6 +46,7 @@ $Date: 2013-04-28 13:51:10 +0200 (So, 28. Apr 2013) $
 #include "../utils/clickablelabel.h"
 #include "../utils/familypropertycombobox.h"
 #include "../referencemodel/referencemodel.h"
+#include "../autocomplete/modelset.h"
 
 #include <QScrollBar>
 #include <QTimer>
@@ -2469,10 +2470,10 @@ void ItemBase::setInspectorTitle(const QString & oldText, const QString & newTex
 	infoGraphicsView->setInstanceTitle(id(), oldText, newText, true, false);
 }
 
-void ItemBase::setModelSet(ModelSet * modelset) {
+void ItemBase::setModelSet(QSharedPointer<ModelSet> modelset) {
     m_modelset = modelset;
 }
 
-ModelSet * ItemBase::modelSet() {
+QSharedPointer<ModelSet> ItemBase::modelSet() {
     return m_modelset;
 }

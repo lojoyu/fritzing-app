@@ -20,19 +20,19 @@ public:
 	//new
     static void setDatabasePath(const QString & databasename);
     static void getSuggestionSet(ItemBase * item, SketchWidget * sketchWidget);
-    static void getSuggestionNext(ModelSet * modelset, SketchWidget * sketchWidget);
+    static void getSuggestionNext(QSharedPointer<ModelSet> modelset, SketchWidget * sketchWidget);
 	static void test();
 
 protected:
     void getSuggestionSetSelf(ItemBase * item, SketchWidget * sketchWidget);
-    void getSuggestionNextSelf(ModelSet * modelset, SketchWidget * sketchWidget);
+    void getSuggestionNextSelf(QSharedPointer<ModelSet> modelset, SketchWidget * sketchWidget);
 	QString getModuleID(QString title, SketchWidget * sketchWidget);
     QString getModuleIDByTitle(QString title, SketchWidget * sketchWidget);
     QString findRestModuleID(QString title);
-    QList<ModelSet *> mapListToModelSet(ItemBase * keyItem, SketchWidget * sketchWidget, QList<QMap<QString, QVariant> *> resultList);
-    QList<SetConnection *> mapListToSetConnection(ModelSet * modelset, QList<ModelSet *> toModelsetList, SketchWidget * sketchWidget, QList<QMap<QString, QVariant> *>connectionList);
-
-    void addModelSet(ModelSet *);
+    void mapListToModelSet(ItemBase * keyItem, SketchWidget * sketchWidget, QList<QMap<QString, QVariant> *> & resultList, QList<QSharedPointer<ModelSet>> & modelSetList);
+    void mapListToSetConnection(QSharedPointer<ModelSet> modelset, QList<QSharedPointer<ModelSet>> & toModelsetList, QList<QMap<QString, QVariant> *> & connectionList, QList<QSharedPointer<SetConnection>> & setConnectionList);
+    void expandModelSetList(QList<long> moduleList, QList<QSharedPointer<ModelSet>> & toModelsetList);
+    void addModelSet(QSharedPointer<ModelSet>);
     
 protected:
 	//new

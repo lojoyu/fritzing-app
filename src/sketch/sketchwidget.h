@@ -347,7 +347,7 @@ public:
     void testConnectors();
     void updateWires();
     void checkForReversedWires();
-    void setAutoComplete(bool);
+
 
 protected:
 	
@@ -780,12 +780,15 @@ protected:
 
 
 ///for autocomplete
+public:
+    void setAutoComplete(bool);
+
 public slots:
-    void addModelSet(ModelSet *, bool transparent);
-    void addSetToSet(ModelSet * modelSet, SetConnection * setconnection, bool transparent);
+    void addModelSet(QSharedPointer<ModelSet>, bool transparent);
+    void addSetToSet(QSharedPointer<ModelSet> modelSet, QSharedPointer<SetConnection> setconnection, bool transparent);
 
 protected:
-    void addSetConnection(SetConnection * setconnection, bool transparent);
+    void addSetConnection(QSharedPointer<SetConnection> setconnection, bool transparent);
     ItemBase * addSetItem(QPointF pos, QString & toModuleID, bool transparent);
     ItemBase * addSetItem(ItemBase * fromItem, const QString & fromConnectorID, QString toModuleID, const QString & toConnectorID, bool transparent);
     ItemBase * addSetWire(ItemBase * fromItem, const QString & fromConnectorID, ItemBase * toItem, const QString & toConnectorID, bool transparent);
@@ -797,10 +800,10 @@ protected:
 
 protected:
 	bool m_autoComplete;
-	ModelSet * m_prevModelSet = NULL;
-    ModelSet * m_pressModelSet = NULL;
-	SetConnection * m_prevSetConnection = NULL;
-	QList<ModelSet *> m_savedModelSet;
+    QSharedPointer<ModelSet> m_prevModelSet;
+    QSharedPointer<ModelSet> m_pressModelSet;
+    QSharedPointer<SetConnection> m_prevSetConnection;
+    QList<QSharedPointer<ModelSet>> m_savedModelSet;
 
 
 };

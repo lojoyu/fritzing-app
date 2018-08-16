@@ -1,8 +1,6 @@
-
 #include <QtCore>
 #include <QGraphicsScene>
 #include <QGraphicsView>
-
 
 #include "sketchwidget.h"
 #include "../autocomplete/autocompleter.h"
@@ -12,47 +10,54 @@
 #include "../items/wire.h"
 
 typedef QPair<long, long> LongLongPair;
+typedef QPair<QString, QString> StringPair;
 
 void SketchWidget::setAutoComplete(bool autoComplete) {
 	m_autoComplete = autoComplete;
 }
 
-void SketchWidget::addSetToSet(ModelSet * modelSet, SetConnection * setconnection, bool transparent) {
+void SketchWidget::addSetToSet(QSharedPointer<ModelSet> modelSet, QSharedPointer<SetConnection> setconnection, bool transparent) {
     addModelSet(modelSet, transparent);
     addSetConnection(setconnection, transparent);
 }
 
-void SketchWidget::addSetConnection(SetConnection * setconnection, bool transparent) {
-	ModelSet * from = setconnection->getFromModelSet();
-	ModelSet * to = setconnection->getToModelSet();
+void SketchWidget::addSetConnection(QSharedPointer<SetConnection> setconnection, bool transparent) {
+    QSharedPointer<ModelSet> from = setconnection->getFromModelSet();
+    QSharedPointer<ModelSet> to = setconnection->getToModelSet();
+    if (from.isNull() || to.isNull()) return;
 
-	QList<QPair<long, long>> connectionList = setconnection->getConnectionList();
-    foreach(LongLongPair c, connectionList) {
-		QPair<ItemBase *, QString> p1 = from->getItemAndCID(c.first);
-		QPair<ItemBase *, QString> p2 = to->getItemAndCID(c.second);
-        if (p1.first == NULL || p2.first == NULL) continue;
+	QList<QPair<QString, QString>> connectionList = setconnection->getConnectionList();
+    foreach(StringPair c, connectionList) {
+        QPair<ItemBase *, QString> p1 = from->getItemAndCID(c.first);
+        QPair<ItemBase *, QString> p2 = to->getItemAndCID(c.second);
+        if (p1.first == NULL|| p2.first == NULL || p1.second == "" ||  p2.second == "") continue;
         ItemBase * wire = addSetWire(p1.first, p1.second, p2.first, p2.second, transparent);
+        if (wire == NULL) continue;
 		setconnection->appendWireList(wire);
 	}
-	
+
 }
 
-void SketchWidget::addModelSet(ModelSet * modelSet, bool transparent) {
-
+void SketchWidget::addModelSet(QSharedPointer<ModelSet> modelSet, bool transparent) {
+    //m_savedModelSet.append(modelSet);
 	if (modelSet == m_prevModelSet) return;
 	removePrevModelSet();
+
+    if (modelSet.isNull()) return;
 
     ItemBase * keyItem = modelSet->keyItem();
     if (keyItem != NULL) {
         keyItem->setModelSet(modelSet);
+        DebugDialog::debug(QString("keyItem"));
+    } else {
+        DebugDialog::debug("keyItem is NULL");
     }
     QList<ModelSet::TerminalPair> connectionList = modelSet->getConnections();
     foreach(ModelSet::TerminalPair c, connectionList) {
         ModelSet::Terminal from = c.first;
         ModelSet::Terminal to = c.second;
-        ItemBase * fromItem = modelSet->getItem(QString("%1%2").arg(from.title).arg(from.label));
+        ItemBase * fromItem = modelSet->getItem(modelSet->genLabelHashKey(from));
         if (fromItem == NULL) {
-
             fromItem = addSetItem(QPointF(0, 0), from.moduleID, transparent);
             if (fromItem == NULL) {
                 continue;
@@ -61,45 +66,53 @@ void SketchWidget::addModelSet(ModelSet * modelSet, bool transparent) {
             modelSet->addItem(fromItem);
             fromItem->setModelSet(modelSet);
         }
-        ItemBase * toItem = modelSet->getItem(QString("%1%2").arg(to.title).arg(to.label));
+        if (to.title == "NULL" || to.title == "") continue;
+        ItemBase * toItem = modelSet->getItem(modelSet->genLabelHashKey(to));
         if (toItem == NULL) {
             toItem = addSetItem(fromItem, from.connectorID, to.moduleID, to.connectorID, transparent);
-        	if (toItem == NULL) {
+            if (toItem == NULL) {
                 continue;
         	}
-            DebugDialog::debug(QString("%1%2").arg(to.title).arg(to.label));
             modelSet->insertLabelHash(modelSet->genLabelHashKey(to), toItem);
             modelSet->addItem(toItem);
             toItem->setModelSet(modelSet);
+           
         }
         ItemBase * wire = addSetWire(fromItem, from.connectorID, toItem, to.connectorID, transparent);
+        if (wire == NULL) continue;
         wire->setModelSet(modelSet);
         //Wire * w = qobject_cast<Wire *>(wire);
         modelSet->addItem(wire);
-
         //TODO: arduino
     }
     m_prevModelSet = modelSet;
 }
 
 void SketchWidget::removePrevModelSet() {
-	if (m_prevModelSet == NULL) return;
+
+    if (m_prevModelSet.isNull()) return;
     QList<ItemBase *> itemList = m_prevModelSet->getItemList();
 
     foreach(ItemBase * itemBase, itemList) {
         //itemBase->removeLayerKin();
-		this->scene()->removeItem(itemBase);
+        this->scene()->removeItem(itemBase);
         if (itemBase->modelPart()) {
             delete itemBase->modelPart();
         }
-		delete itemBase;
+        delete itemBase;
 	}
 	m_prevModelSet->emptyItemList();
 }
 
 ItemBase * SketchWidget::addSetWire(ItemBase * fromItem, const QString & fromConnectorID, ItemBase * toItem, const QString & toConnectorID, bool transparent) {
-	ConnectorItem * fromConnectorItem = findConnectorItem(fromItem, fromConnectorID, fromItem->viewLayerPlacement());
-	if (fromConnectorItem == NULL) return NULL;
+    //DebugDialog::debug(QString("%1").arg(fromItem->title()));
+    // ItemBase * itemBase = findItem(fromItem->id());
+    // if (itemBase == NULL) {
+    //     return NULL;
+    // }
+
+    ConnectorItem * fromConnectorItem = findConnectorItem(fromItem, fromConnectorID, fromItem->viewLayerPlacement());
+    if (fromConnectorItem == NULL) return NULL;
 
 	ModelPart * wirePart = m_referenceModel->retrieveModelPart(QString("WireModuleID"));
 	long wireID = ItemBase::getNextID();
@@ -117,7 +130,7 @@ ItemBase * SketchWidget::addSetWire(ItemBase * fromItem, const QString & fromCon
     viewGeometryWire.setLoc(fromConnectorPos);
 	viewGeometryWire.setLine(line);
     ItemBase * wire = addItemAuxTemp(wirePart, defaultViewLayerPlacement(wirePart), viewGeometryWire, wireID, true, m_viewID, true);
-   
+   	if (wire == NULL) return NULL;
     if (transparent) wire->setOpacity(0.5);
 
     changeConnection(fromItem->id(), fromConnectorID, wireID, "connector0", ViewLayer::specFromID(fromConnectorItem->attachedToViewLayerID()), true, false, false);
@@ -129,8 +142,8 @@ ItemBase * SketchWidget::addSetItem(QPointF pos, QString & toModuleID, bool tran
 
 	toModuleID = checkDroppedModuleID(toModuleID);
 	ModelPart * modelPart = m_referenceModel->retrieveModelPart(toModuleID);
-	if (modelPart ==  NULL) return NULL;
-	if (!canDropModelPart(modelPart)) return NULL;
+    if (modelPart ==  NULL) return NULL;
+    if (!canDropModelPart(modelPart)) return NULL;
 
 
 	ViewGeometry viewGeometry;
@@ -138,7 +151,7 @@ ItemBase * SketchWidget::addSetItem(QPointF pos, QString & toModuleID, bool tran
 
 	long toID = ItemBase::getNextID();
 	bool doConnectors = true;
-	ItemBase *toItem = addItemAuxTemp(modelPart, defaultViewLayerPlacement(modelPart), viewGeometry, toID, doConnectors, m_viewID, true);
+	ItemBase *toItem = addItemAuxTemp(modelPart, defaultViewLayerPlacement(modelPart), viewGeometry, toID, doConnectors, m_viewID, false);
     toItem->setPos(pos);
 
     if (transparent) toItem->setOpacity(0.5);
@@ -155,7 +168,7 @@ ItemBase * SketchWidget::addSetItem(ItemBase * fromItem, const QString & fromCon
     //QString toConnectorID2 = QString("connector1");
 	// get from item
     ConnectorItem * fromConnectorItem = findConnectorItem(fromItem, fromConnectorID, fromItem->viewLayerPlacement());
-	if (fromConnectorItem == NULL) return NULL; // for now
+    if (fromConnectorItem == NULL) return NULL; // for now
 
 	//check connection item under
 	QList<ConnectorItem *> exclude;
@@ -167,8 +180,8 @@ ItemBase * SketchWidget::addSetItem(ItemBase * fromItem, const QString & fromCon
         //fromOverConnectorItem->setOverConnectorItem(NULL);   // clean up
 		toModuleID = checkDroppedModuleID(toModuleID);
 		ModelPart * modelPart = m_referenceModel->retrieveModelPart(toModuleID);
-		if (modelPart ==  NULL) return NULL;
-		if (!canDropModelPart(modelPart)) return NULL;
+        if (modelPart ==  NULL) return NULL;
+        if (!canDropModelPart(modelPart)) return NULL;
 
 
 		ViewGeometry viewGeometry;
@@ -210,22 +223,29 @@ void SketchWidget::checkMousePressSuggestion(QGraphicsItem * item) {
 
     ItemBase * itemBase = dynamic_cast<ItemBase *>(item);
     if (itemBase) {
-        ModelSet * modelset = itemBase->modelSet();
-        if (modelset != NULL) {
+        QSharedPointer<ModelSet> modelset = itemBase->modelSet();
+        if (!modelset.isNull()) {
             m_pressModelSet = modelset;
+
         }
     }
 }
 
 void SketchWidget::checkSelectSuggestion() {
-    if (!m_autoComplete || m_pressModelSet == NULL) return;
+    if (!m_autoComplete || m_pressModelSet.isNull()) return;
     QList<ItemBase *> itemList = m_pressModelSet->getItemList();
     foreach(ItemBase * item, itemList) {
         if (item->opacity() == 1) return;
         item->setOpacity(1);
     }
-    m_prevModelSet = NULL;
+
+    if (m_pressModelSet->keyId() != -1) {
+        ItemBase * keyItem = findItem(m_pressModelSet->keyId());
+        if (keyItem != NULL) m_pressModelSet->setKeyItem(keyItem);
+    }
+
+    m_prevModelSet.reset();
     AutoCompleter::getSuggestionNext(m_pressModelSet, this);
-    m_pressModelSet = NULL;
+    m_pressModelSet.reset();
 }
 

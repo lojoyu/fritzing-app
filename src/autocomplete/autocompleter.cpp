@@ -40,7 +40,7 @@ void debugPrintResult(QString str, QList<QMap<QString, QVariant> *> resultList) 
 AutoCompleter* AutoCompleter::singleton = NULL;
 
 AutoCompleter::AutoCompleter() {
-
+    m_sketchwidget = NULL;
 }
 
 AutoCompleter::~AutoCompleter() {
@@ -66,7 +66,7 @@ void AutoCompleter::getSuggestionSet(ItemBase * item, SketchWidget * sketchWidge
     singleton->getSuggestionSetSelf(item, sketchWidget);
 }
 
-void AutoCompleter::getSuggestionNext(ModelSet * modelset, SketchWidget * sketchWidget) {
+void AutoCompleter::getSuggestionNext(QSharedPointer<ModelSet> modelset, SketchWidget * sketchWidget) {
     if (singleton == NULL) {
         singleton = new AutoCompleter();
     }
@@ -74,69 +74,95 @@ void AutoCompleter::getSuggestionNext(ModelSet * modelset, SketchWidget * sketch
 }
 
 void AutoCompleter::getSuggestionSetSelf(ItemBase * item, SketchWidget * sketchWidget) {
-
     QString title = item->title();
     QList<QMap<QString, QVariant> *> resultList = AutocompleteDBManager::getModelSet(title);
-    QList<ModelSet *> modelSetList = mapListToModelSet(item, sketchWidget, resultList);
-    if (modelSetList.length() > 0) sketchWidget->addModelSet(modelSetList[0], true);
+    QList<QSharedPointer<ModelSet>> modelSetList;
+    mapListToModelSet(item, sketchWidget, resultList, modelSetList);
+    qDeleteAll(resultList);
+    resultList.clear();
+    if (modelSetList.length() > 0) {
+        if (modelSetList.length() == 1 && modelSetList[0]->single()){
+            getSuggestionNextSelf(modelSetList[0], sketchWidget);
+        } else {
+            sketchWidget->addModelSet(modelSetList[0], true);
+        }
+    }
     //getSuggestionNextSelf(modelSetList[0], sketchWidget);
     //return modelSetList;
 }
 
-QList<ModelSet *> AutoCompleter::mapListToModelSet(ItemBase * keyItem, SketchWidget * sketchWidget, QList<QMap<QString, QVariant> *> resultList) {
+void AutoCompleter::mapListToModelSet(ItemBase * keyItem, SketchWidget * sketchWidget, QList<QMap<QString, QVariant> *> & resultList, QList<QSharedPointer<ModelSet>> & modelSetList) {
     QString title = keyItem == NULL ? "" : keyItem->title();
-    QList<ModelSet *> modelSetList;
     long setid = -1;
-    ModelSet * modelSet;
+    QSharedPointer<ModelSet> modelSet;
     for (int i=0; i<resultList.length(); i++) {
         QMap<QString, QVariant> map = *resultList[i];
         long nowid = map["module_id"].toLongLong();
         if (setid == -1 || setid != nowid) {
             setid = nowid;
-            modelSet = new ModelSet(nowid, title);
+            modelSet = QSharedPointer<ModelSet>(new ModelSet(nowid, title));
+            DebugDialog::debug(QString("%2~~~~~~~~~~~~~~~%1").arg(modelSet->keyId()).arg(setid));
             modelSetList.append(modelSet);
+            modelSet->setSingle(true);
         }
         //TODO: Handling NULL
         QString title1 = map["component_title"].toString();
         QString title2 = map["to_component_title"].toString();
+        
         QString m1 = getModuleIDByTitle(title1, sketchWidget);
         QString m2 = getModuleIDByTitle(title2, sketchWidget);
         ModelSet::Terminal t1 = ModelSet::Terminal(m1, title1, map["component_label"].toString(), map["component_terminal"].toString());
         ModelSet::Terminal t2 = ModelSet::Terminal(m2, title2, map["to_component_label"].toString(), map["to_component_terminal"].toString());
         modelSet->appendConnection(t1, t2);
         modelSet->insertTerminalHash(map["id"].toLongLong(), t1);
+        modelSet->insertTerminalnameHash(map["name"].toString(), t1);
         if (title1 == title) {
+            modelSet->setKeyLabel(map["component_label"].toString());
             modelSet->setKeyItem(keyItem);
-            modelSet->insertLabelHash(title+map["component_label"].toString(), keyItem);
+            //keyItem->setModelSet(modelSet);
         }
+        if (title2 != "NULL") modelSet->setSingle(false);
     }
-    return modelSetList;
-
 }
 
 //TODO: cannot handle set-set with different connection
-QList<SetConnection *> AutoCompleter::mapListToSetConnection(ModelSet * modelset, QList<ModelSet *> toModelsetList, SketchWidget * sketchWidget, QList<QMap<QString, QVariant> *>connectionList){
-    QList<SetConnection *> setConnectionList;
+void AutoCompleter::mapListToSetConnection(QSharedPointer<ModelSet> modelset, QList<QSharedPointer<ModelSet>> & toModelsetList, QList<QMap<QString, QVariant> *> & connectionList, QList<QSharedPointer<SetConnection>> & setConnectionList){
     int ind = 0;
     long cid = -1;
-    SetConnection * setconnection;
+    QSharedPointer<SetConnection> setconnection;
     for (int i=0; i<connectionList.length(); i++) {
         QMap<QString, QVariant> map = *connectionList[i];
         long nowid = map["connection_id"].toLongLong();
         if (cid == -1 || cid != nowid) {
             cid = nowid;
-            setconnection = new SetConnection(modelset, toModelsetList[ind]);
+            setconnection = QSharedPointer<SetConnection>(new SetConnection(modelset, toModelsetList[ind]));
+            //DebugDialog::debug(QString("mapListToSetConnection: %1").arg(modelset->keyItem()->title()));
+            //DebugDialog::debug(QString("mapListToSetConnection: %1").arg(toModelsetList[ind]->title()));
             setConnectionList.append(setconnection);
             ind++;
         }
-        setconnection->appendConnection(map["terminal_id"].toLongLong(), map["to_terminal_id"].toLongLong());
+        //setconnection->appendConnection(map["terminal_id"].toLongLong(), map["to_terminal_id"].toLongLong());
+        setconnection->appendConnection(map["terminal_id"].toString(), map["to_terminal_id"].toString());
     }
-    return setConnectionList;
 }
 
-void AutoCompleter::getSuggestionNextSelf(ModelSet * modelset, SketchWidget * sketchWidget) {
+void AutoCompleter::expandModelSetList(QList<long> moduleList, QList<QSharedPointer<ModelSet>> & toModelsetList) {
+    DebugDialog::debug(QString("autocompleter::expandModelSetList %1").arg(toModelsetList.length()));
+    QHash<long, QSharedPointer<ModelSet>> idhash;
+    for (int i=0; i<toModelsetList.length(); i++) {
+        QSharedPointer<ModelSet> modelset = toModelsetList[i];
+        idhash.insert(modelset->getSetId(), modelset);
+    }
+    toModelsetList.clear();
+    for (int i=0; i<moduleList.length(); i++) {
+        toModelsetList.append(idhash[moduleList[i]]);
+    }
+}
+
+void AutoCompleter::getSuggestionNextSelf(QSharedPointer<ModelSet> modelset, SketchWidget * sketchWidget) {
 //QList<ModelSet *> AutoCompleter::getSuggestionNextSelf(long setid, SketchWidget * sketchWidget) {
     //TODO: check if no need to frequent ask db
+    //DebugDialog::debug(QString("getSuggestionNext: %1").arg(modelset->keyItem()->title()));
     long setid = modelset->getSetId();
     QList<QPair<long, long>> toList = AutocompleteDBManager::getFrequentConnect(setid, m_maxSuggestion);
     if (toList.length() == 0) return;
@@ -148,17 +174,19 @@ void AutoCompleter::getSuggestionNextSelf(ModelSet * modelset, SketchWidget * sk
     }
     QList<QMap<QString, QVariant> *> connectionList = AutocompleteDBManager::getConnectionsByID(idList);
     QList<QMap<QString, QVariant> *> modelsetMapList = AutocompleteDBManager::getModelSetsByID(moduleList);
-    QList<ModelSet *> toModelsetList = mapListToModelSet(NULL, sketchWidget, modelsetMapList);
-    QList<SetConnection *> setConnectionList = mapListToSetConnection(modelset, toModelsetList, sketchWidget, connectionList);
-    
+    QList<QSharedPointer<ModelSet>> toModelsetList;
+    QList<QSharedPointer<SetConnection>> setConnectionList;
+    mapListToModelSet(NULL, sketchWidget, modelsetMapList, toModelsetList);
+    expandModelSetList(moduleList, toModelsetList);
+    mapListToSetConnection(modelset, toModelsetList, connectionList, setConnectionList);
+    qDeleteAll(connectionList);
+    qDeleteAll(modelsetMapList);
+    connectionList.clear();
+    modelsetMapList.clear();
+
     sketchWidget->addSetToSet(toModelsetList[0], setConnectionList[0], true);
 
 }
-
-//get suggestion set
-//get suggestion ?
-//get suggestion connection
-
 
 QString AutoCompleter::getModuleIDByTitle(QString title, SketchWidget * sketchWidget) {
     if (m_titleToModuleID.contains(title)) return m_titleToModuleID[title];
@@ -185,7 +213,6 @@ QString AutoCompleter::getModuleID(QString title, SketchWidget * sketchWidget){
     } else {
         return findRestModuleID(title);
     }
-
 }
 
 

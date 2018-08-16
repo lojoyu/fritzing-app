@@ -2137,7 +2137,10 @@ void SketchWidget::dropItemEvent(QDropEvent *event) {
 	}
 
 	//autocomplete
-    if (m_autoComplete) AutoCompleter::getSuggestionSet(m_droppingItem, this);
+    if (m_autoComplete) {
+        //ConnectorItem * fromConnectorItem = findConnectorItem(m_droppingItem, "connector1", m_droppingItem->viewLayerPlacement());
+        AutoCompleter::getSuggestionSet(m_droppingItem, this);
+    }
 	
 	//foreach (ConnectorItem * connectorItem, connectorItems) {
 		//if (!connectorItem->marked()) {
@@ -2145,9 +2148,9 @@ void SketchWidget::dropItemEvent(QDropEvent *event) {
 		//}
 	//}
 	//m_droppingItem->clearConnectorHover();
-    DebugDialog::debug(QString("DropItemEvent:%1").arg(m_droppingItem->id()));
 
-	clearTemporaries();
+    long oriId = m_droppingItem->id();
+    clearTemporaries();
 
 	killDroppingItem();
 
