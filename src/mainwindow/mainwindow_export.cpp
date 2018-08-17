@@ -1558,6 +1558,7 @@ void MainWindow::exportNetlist(const QString & fileName) {
 			part.setAttribute("id", itemBase->id());
 			part.setAttribute("label", itemBase->instanceTitle());
 			part.setAttribute("title", itemBase->title());
+			part.setAttribute("moduleID", itemBase->moduleID());
 			ErcData * ercData = connectorItem->connectorSharedErcData();
 			if (ercData != NULL) {
 				QDomElement erc = doc.createElement("erc");
@@ -1642,6 +1643,7 @@ void MainWindow::exportNetlist() {
 			part.setAttribute("id", itemBase->id());
 			part.setAttribute("label", itemBase->instanceTitle());
 			part.setAttribute("title", itemBase->title());
+			part.setAttribute("moduleID", itemBase->moduleID());
 			ErcData * ercData = connectorItem->connectorSharedErcData();
 			if (ercData != NULL) {
 				QDomElement erc = doc.createElement("erc");

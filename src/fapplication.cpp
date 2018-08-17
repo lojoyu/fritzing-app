@@ -990,10 +990,12 @@ void FApplication::runNetlistServiceAux()
     
     QDir dir(m_outputFolder);
     QString s = dir.absolutePath();
+
     QStringList filters;
     filters << "*" + FritzingBundleExtension;
     QStringList filenames = dir.entryList(filters, QDir::Files);
     foreach (QString filename, filenames) {
+
         QString filepath = dir.absoluteFilePath(filename);
         MainWindow * mainWindow = openWindowForService(false, -1);
         m_started = true;
