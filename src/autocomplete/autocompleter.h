@@ -6,12 +6,12 @@
 
 #include "../sketch/sketchwidget.h"
 #include "modelset.h"
-#include "../fritzing-app/src/mainwindow/mainwindow.h"
-
+#include "../mainwindow/mainwindow.h"
 
 class AutoCompleter : public QObject
 {
-	
+Q_OBJECT	
+
 typedef QPair<QString, double> QPairSD_t;
 typedef QPair<QString, QString> QPairSS_t;
 
@@ -26,8 +26,8 @@ public:
 	static void test();
 
 signals:
-    void NextSelf_signal(QList<ModelSet *> , QList<SetConnection *>);
-    void SetSelf_signal(QList<ModelSet *>);
+    void addModelSetSignal(QList<QSharedPointer<ModelSet>>);
+    void addSetConnectionSignal(QList<QSharedPointer<ModelSet>>, QList<QSharedPointer<SetConnection>> setConnectionList);
 
 protected:
     void getSuggestionSetSelf(ItemBase * item, SketchWidget * sketchWidget);
@@ -38,13 +38,13 @@ protected:
     void mapListToModelSet(ItemBase * keyItem, SketchWidget * sketchWidget, QList<QMap<QString, QVariant> *> & resultList, QList<QSharedPointer<ModelSet>> & modelSetList);
     void mapListToSetConnection(QSharedPointer<ModelSet> modelset, QList<QSharedPointer<ModelSet>> & toModelsetList, QList<QMap<QString, QVariant> *> & connectionList, QList<QSharedPointer<SetConnection>> & setConnectionList);
     void expandModelSetList(QList<long> moduleList, QList<QSharedPointer<ModelSet>> & toModelsetList);
-    void addModelSet(QSharedPointer<ModelSet>);
+    //void addModelSet(QSharedPointer<ModelSet>);
     
 protected:
 	//new
     int m_maxSuggestion = 5;
 	static AutoCompleter* singleton;
-	class SketchWidget* m_sketchwidget;
+	//class SketchWidget* m_sketchwidget;
     QHash<QString, QString> m_titleToModuleID;
     class MainWindow * mw;
 

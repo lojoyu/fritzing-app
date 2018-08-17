@@ -40,13 +40,12 @@ void debugPrintResult(QString str, QList<QMap<QString, QVariant> *> resultList) 
 AutoCompleter* AutoCompleter::singleton = NULL;
 
 AutoCompleter::AutoCompleter() {
-    m_sketchwidget = NULL;
+
 }
 
 AutoCompleter::~AutoCompleter() {
 
 }
-
 
 AutoCompleter * AutoCompleter::getAutoCompleter() {
     if (singleton == NULL) {
@@ -82,6 +81,7 @@ void AutoCompleter::getSuggestionNext(QSharedPointer<ModelSet> modelset, SketchW
 }
 
 void AutoCompleter::getSuggestionSetSelf(ItemBase * item, SketchWidget * sketchWidget) {
+
     QString title = item->title();
     QList<QMap<QString, QVariant> *> resultList = AutocompleteDBManager::getModelSet(title);
     QList<QSharedPointer<ModelSet>> modelSetList;
@@ -90,9 +90,11 @@ void AutoCompleter::getSuggestionSetSelf(ItemBase * item, SketchWidget * sketchW
     resultList.clear();
     if (modelSetList.length() > 0) {
         if (modelSetList.length() == 1 && modelSetList[0]->single()){
+            //modelSetList[0]->setKeyItem(item);
             getSuggestionNextSelf(modelSetList[0], sketchWidget);
         } else {
-            mw->setmodelSetList(modelSetList);
+            emit addModelSetSignal(modelSetList);
+            //mw->setmodelSetList(modelSetList);
             //sketchWidget->addModelSet(modelSetList[0], true);
         }
     }
@@ -108,7 +110,6 @@ void AutoCompleter::mapListToModelSet(ItemBase * keyItem, SketchWidget * sketchW
         if (setid == -1 || setid != nowid) {
             setid = nowid;
             modelSet = QSharedPointer<ModelSet>(new ModelSet(nowid, title));
-            DebugDialog::debug(QString("%2~~~~~~~~~~~~~~~%1").arg(modelSet->keyId()).arg(setid));
             modelSetList.append(modelSet);
             modelSet->setSingle(true);
         }
@@ -125,7 +126,8 @@ void AutoCompleter::mapListToModelSet(ItemBase * keyItem, SketchWidget * sketchW
         modelSet->insertTerminalnameHash(map["name"].toString(), t1);
         if (title1 == title) {
             modelSet->setKeyLabel(map["component_label"].toString());
-            modelSet->setKeyItem(keyItem);
+            //modelSet->setKeyItem(keyItem);
+            modelSet->setKeyId(keyItem->id());
             //keyItem->setModelSet(modelSet);
         }
         if (title2 != "NULL") modelSet->setSingle(false);
@@ -154,7 +156,6 @@ void AutoCompleter::mapListToSetConnection(QSharedPointer<ModelSet> modelset, QL
 }
 
 void AutoCompleter::expandModelSetList(QList<long> moduleList, QList<QSharedPointer<ModelSet>> & toModelsetList) {
-    DebugDialog::debug(QString("autocompleter::expandModelSetList %1").arg(toModelsetList.length()));
     QHash<long, QSharedPointer<ModelSet>> idhash;
     for (int i=0; i<toModelsetList.length(); i++) {
         QSharedPointer<ModelSet> modelset = toModelsetList[i];
@@ -167,12 +168,15 @@ void AutoCompleter::expandModelSetList(QList<long> moduleList, QList<QSharedPoin
 }
 
 void AutoCompleter::getSuggestionNextSelf(QSharedPointer<ModelSet> modelset, SketchWidget * sketchWidget) {
-//QList<ModelSet *> AutoCompleter::getSuggestionNextSelf(long setid, SketchWidget * sketchWidget) {
-    //TODO: check if no need to frequent ask db
-    //DebugDialog::debug(QString("getSuggestionNext: %1").arg(modelset->keyItem()->title()));
+    QList<QSharedPointer<ModelSet>> toModelsetList;
+    QList<QSharedPointer<SetConnection>> setConnectionList;
+
     long setid = modelset->getSetId();
     QList<QPair<long, long>> toList = AutocompleteDBManager::getFrequentConnect(setid, m_maxSuggestion);
-    if (toList.length() == 0) return;
+    if (toList.length() == 0) {
+        emit addSetConnectionSignal(toModelsetList, setConnectionList);
+        return;
+    }
     QList<long> idList;
     QList<long> moduleList;
     foreach(LongLongPair pair, toList) {
@@ -181,9 +185,8 @@ void AutoCompleter::getSuggestionNextSelf(QSharedPointer<ModelSet> modelset, Ske
     }
     QList<QMap<QString, QVariant> *> connectionList = AutocompleteDBManager::getConnectionsByID(idList);
     QList<QMap<QString, QVariant> *> modelsetMapList = AutocompleteDBManager::getModelSetsByID(moduleList);
-<<<<<<< HEAD
-    QList<QSharedPointer<ModelSet>> toModelsetList;
-    QList<QSharedPointer<SetConnection>> setConnectionList;
+
+
     mapListToModelSet(NULL, sketchWidget, modelsetMapList, toModelsetList);
     expandModelSetList(moduleList, toModelsetList);
     mapListToSetConnection(modelset, toModelsetList, connectionList, setConnectionList);
@@ -192,7 +195,8 @@ void AutoCompleter::getSuggestionNextSelf(QSharedPointer<ModelSet> modelset, Ske
     connectionList.clear();
     modelsetMapList.clear();
 
-    mw->setTosetList(toModelsetList, setConnectionList);
+    emit addSetConnectionSignal(toModelsetList, setConnectionList);
+   // mw->setTosetList(toModelsetList, setConnectionList);
     //sketchWidget->addSetToSet(toModelsetList[0], setConnectionList[0], true);
 
 }
@@ -226,8 +230,6 @@ QString AutoCompleter::getModuleID(QString title, SketchWidget * sketchWidget){
 
 
 QString AutoCompleter::findRestModuleID(QString title) {
-    //if (title == "220Ω Resistor_connector0")
-    DebugDialog::debug(QString("findRestModuleID: %1").arg(title));
 
     //Resistor
     QString ohmSymbol(QChar(0x03A9));
@@ -235,7 +237,6 @@ QString AutoCompleter::findRestModuleID(QString title) {
     //QRegularExpression re("^\\d.*Resistor$");
     QRegularExpressionMatch match = re.match(title);
     if (match.hasMatch()) {
-        DebugDialog::debug(QString("findRestModuleID:%1").arg(ModuleIDNames::ResistorModuleIDName));
         return ModuleIDNames::ResistorModuleIDName;
     }
 
@@ -243,7 +244,6 @@ QString AutoCompleter::findRestModuleID(QString title) {
     re = QRegularExpression("\\w* \\(\\d*nm\\) LED");
     match = re.match(title);
     if (match.hasMatch()) {
-        DebugDialog::debug(QString("findRestModuleID:%1").arg(ModuleIDNames::ResistorModuleIDName));
         return QString("5mmColor%1").arg(ModuleIDNames::LEDModuleIDName);
     }
 

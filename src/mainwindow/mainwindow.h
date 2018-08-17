@@ -241,14 +241,6 @@ public:
     void setFireQuoteDelay(int);
     void setInitialTab(int);
     void noSchematicConversion();
-    void setTosetList(QList<ModelSet *> toModelsetList, QList<SetConnection *> setConnectionList);
-    void setmodelSetList(QList<ModelSet *> modelSetList);
-    QList<ModelSet *> m_modelSetList ;
-    QList<ModelSet *> m_toModelsetList ;
-    QList<SetConnection *> m_setConnectionList ;
-    SketchWidget * sk ;
-
-    QPointer <QListWidget> Recommendlist ;
 
 public:
 	static void initNames();
@@ -287,11 +279,6 @@ public slots:
     void setGroundFillKeepout();
     void oldSchematicsSlot(const QString & filename, bool & useOldSchematics);
     void showWelcomeView();
-
-    void slotOnItemEntered(QListWidgetItem*) ;
-    void CurrentRowItem(int) ;
-    void addRecommendList(QList<ModelSet *>, QList<SetConnection *>);
-    void addmodelSetList(QList<ModelSet *>);
 
 protected slots:
 
@@ -997,6 +984,47 @@ protected:
 	static int CascadeFactorX;
 	static int CascadeFactorY;
     static QRegExp GuidMatcher;
+
+
+
+    //recommend list
+public:
+    enum SuggestionType {
+        toModelSet,
+        setToSet
+    };
+public slots:
+
+    void onItemEnteredSlot(QListWidgetItem*);
+    void onItemClickedSlot(QListWidgetItem*);
+
+    //void CurrentRowItem(int) ;
+    //void addRecommendList(QList<QSharedPointer<ModelSet>>, QList<QSharedPointer<SetConnection>>);
+    //void addmodelSetList(QList<QSharedPointer<ModelSet>>);
+    void setTosetList(QList<QSharedPointer<ModelSet>> toModelsetList, QList<QSharedPointer<SetConnection>> setConnectionList);
+    void setmodelSetList(QList<QSharedPointer<ModelSet>> modelSetList);
+
+
+protected:
+
+    void onItemEvent(QListWidgetItem*, bool);
+
+    //QList<QSharedPointer<ModelSet>> m_modelSetList ;
+    //QList<QSharedPointer<ModelSet>> m_toModelsetList ;
+    //QList<QSharedPointer<SetConnection>> m_setConnectionList ;
+    //SketchWidget * sk ;
+
+    //QPointer <QListWidget> Recommendlist ;
+
+    //QList<QSharedPointer<ModelSet>> m_modelSetList_1 ;
+    //QList<QSharedPointer<ModelSet>> m_toModelsetList_1 ;
+    //QList<QSharedPointer<SetConnection>> m_setConnectionList_1 ;
+    QListWidget * m_recommendlist;
+    SketchWidget * m_sketchwidget;
+    //bool b_setmodelSet ;
+    //bool b_setToset ;
+
 };
+//Q_DECLARE_METATYPE(MainWindow);
 
 #endif

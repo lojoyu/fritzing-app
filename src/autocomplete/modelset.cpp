@@ -77,12 +77,17 @@ void ModelSet::setKeyItem(ItemBase * item) {
     m_keyid = item->id();
 }
 
+void ModelSet::setKeyId(long id) {
+    m_keyid = id;
+}
+
 void ModelSet::setKeyLabel(QString label) {
     m_keyLabel = label;
 }
 
 void ModelSet::emptyItemList() {
     m_itemList.clear();
+    m_labelHash.clear();
 }
 
 QPair<ItemBase *, QString> ModelSet::getItemAndCID2(long terminalId) {
@@ -108,8 +113,6 @@ QPair<ItemBase *, QString> ModelSet::getItemAndCID(QString terminalName) {
         return QPair<ItemBase *, QString>(NULL, "");
     }
     ItemBase * item = m_labelHash[key];
-    DebugDialog::debug(QString("getItemAndCID ---> %1 : %2, 0x%3").arg(key).arg(item->id()).arg((quintptr)this,
-                               QT_POINTER_SIZE * 2, 16, QChar('0')));
     return QPair<ItemBase *, QString>(item, t.connectorID);
 }
 
@@ -133,6 +136,19 @@ void ModelSet::setSingle(bool b) {
 bool ModelSet::single() {
     return m_single;
 }
+
+void ModelSet::addSetConnection(QSharedPointer<SetConnection> s) {
+    m_setConnection = s;
+}
+
+QSharedPointer<SetConnection> ModelSet::setConnection() {
+    return m_setConnection;
+}
+
+void ModelSet::clearSetConnection() {
+    m_setConnection.reset();
+}
+
 
 ///////
 

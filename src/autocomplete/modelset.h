@@ -6,6 +6,8 @@
 #include "../items/wire.h"
 
 class ItemBase;
+class SetConnection;
+
 class ModelSet {
 
 public:
@@ -38,6 +40,7 @@ public:
 	QList<ItemBase *> getItemList();
     void setKeyItem(ItemBase * item);
 	void setKeyLabel(QString label);
+    void setKeyId(long id);
 	void emptyItemList();
 	long getSetId();
 	QPair<ItemBase *, QString> getItemAndCID2(long terminalId);
@@ -47,8 +50,9 @@ public:
     void setSingle(bool b);
     bool single(); 
     qint64 keyId();
-
-
+    void addSetConnection(QSharedPointer<SetConnection> s);
+    QSharedPointer<SetConnection> setConnection();
+    void clearSetConnection();
 
 protected:
 	//static long m_nextid;
@@ -64,6 +68,7 @@ protected:
     QHash<long, Terminal> m_terminalHash;
     QHash<QString, Terminal> m_terminalnameHash;
     bool m_single;
+    QSharedPointer<SetConnection> m_setConnection;
 
 };
 
@@ -92,5 +97,11 @@ protected:
 	QList<QPair<QString, QString>> m_connectionList;
 	QList<ItemBase *> m_wireList;
 };
+
+Q_DECLARE_METATYPE(ModelSet)
+Q_DECLARE_METATYPE(SetConnection)
+
+Q_DECLARE_METATYPE(QSharedPointer<ModelSet>)
+Q_DECLARE_METATYPE(QSharedPointer<SetConnection>)
 
 #endif

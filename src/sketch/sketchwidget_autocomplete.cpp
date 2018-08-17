@@ -19,12 +19,24 @@ void SketchWidget::setAutoComplete(bool autoComplete) {
 void SketchWidget::addSetToSet(QSharedPointer<ModelSet> modelSet, QSharedPointer<SetConnection> setconnection, bool transparent) {
     addModelSet(modelSet, transparent);
     addSetConnection(setconnection, transparent);
+    modelSet->addSetConnection(setconnection);
 }
 
 void SketchWidget::addSetConnection(QSharedPointer<SetConnection> setconnection, bool transparent) {
     QSharedPointer<ModelSet> from = setconnection->getFromModelSet();
     QSharedPointer<ModelSet> to = setconnection->getToModelSet();
     if (from.isNull() || to.isNull()) return;
+    if (from->single()) {
+        ItemBase * keyItem = from->keyItem();
+        if (keyItem == NULL) {
+            long id = from->keyId();
+            keyItem = findItem(id);
+        }
+        if (keyItem != NULL) {
+            from->setKeyItem(keyItem);
+            keyItem->setModelSet(from);
+        }
+    }
 
 	QList<QPair<QString, QString>> connectionList = setconnection->getConnectionList();
     foreach(StringPair c, connectionList) {
@@ -40,18 +52,30 @@ void SketchWidget::addSetConnection(QSharedPointer<SetConnection> setconnection,
 
 void SketchWidget::addModelSet(QSharedPointer<ModelSet> modelSet, bool transparent) {
     //m_savedModelSet.append(modelSet);
-	if (modelSet == m_prevModelSet) return;
+    if (modelSet == m_prevModelSet) {
+        if (!transparent) {
+            setOpacity(modelSet);
+            confirmSelect(modelSet);
+        } else {
+            removePrevSetConnection();
+        }
+        return;
+    }
 	removePrevModelSet();
 
     if (modelSet.isNull()) return;
+    m_prevModelSet = modelSet;
 
     ItemBase * keyItem = modelSet->keyItem();
-    if (keyItem != NULL) {
-        keyItem->setModelSet(modelSet);
-        DebugDialog::debug(QString("keyItem"));
-    } else {
-        DebugDialog::debug("keyItem is NULL");
+    if (keyItem == NULL) {
+        long id = modelSet->keyId();
+        keyItem = findItem(id);
     }
+    if (keyItem != NULL) {
+        modelSet->setKeyItem(keyItem);
+        keyItem->setModelSet(modelSet);
+    }
+
     QList<ModelSet::TerminalPair> connectionList = modelSet->getConnections();
     foreach(ModelSet::TerminalPair c, connectionList) {
         ModelSet::Terminal from = c.first;
@@ -78,6 +102,8 @@ void SketchWidget::addModelSet(QSharedPointer<ModelSet> modelSet, bool transpare
             toItem->setModelSet(modelSet);
            
         }
+
+        DebugDialog::debug(QString("from: %1, to: %2").arg(fromItem->title()).arg(toItem->title()));
         ItemBase * wire = addSetWire(fromItem, from.connectorID, toItem, to.connectorID, transparent);
         if (wire == NULL) continue;
         wire->setModelSet(modelSet);
@@ -85,14 +111,15 @@ void SketchWidget::addModelSet(QSharedPointer<ModelSet> modelSet, bool transpare
         modelSet->addItem(wire);
         //TODO: arduino
     }
-    m_prevModelSet = modelSet;
+    if (!transparent) confirmSelect(modelSet);
+
 }
 
 void SketchWidget::removePrevModelSet() {
 
     if (m_prevModelSet.isNull()) return;
     QList<ItemBase *> itemList = m_prevModelSet->getItemList();
-
+    QSharedPointer<SetConnection> setConnection = m_prevModelSet->setConnection();
     foreach(ItemBase * itemBase, itemList) {
         //itemBase->removeLayerKin();
         this->scene()->removeItem(itemBase);
@@ -101,7 +128,28 @@ void SketchWidget::removePrevModelSet() {
         }
         delete itemBase;
 	}
+    removePrevSetConnection();
 	m_prevModelSet->emptyItemList();
+    m_prevModelSet.clear();
+}
+
+void SketchWidget::removePrevSetConnection() {
+    if (m_prevModelSet.isNull()) return;
+    QSharedPointer<SetConnection> setConnection = m_prevModelSet->setConnection();
+    if (setConnection.isNull()) return;
+    QList<ItemBase *> itemList = setConnection->getWireList();
+
+    foreach(ItemBase * itemBase, itemList) {
+        //itemBase->removeLayerKin();
+        this->scene()->removeItem(itemBase);
+        if (itemBase->modelPart()) {
+            delete itemBase->modelPart();
+        }
+        delete itemBase;
+    }
+    setConnection->emptyWireList();
+    m_prevModelSet->clearSetConnection();
+
 }
 
 ItemBase * SketchWidget::addSetWire(ItemBase * fromItem, const QString & fromConnectorID, ItemBase * toItem, const QString & toConnectorID, bool transparent) {
@@ -233,19 +281,45 @@ void SketchWidget::checkMousePressSuggestion(QGraphicsItem * item) {
 
 void SketchWidget::checkSelectSuggestion() {
     if (!m_autoComplete || m_pressModelSet.isNull()) return;
-    QList<ItemBase *> itemList = m_pressModelSet->getItemList();
+    setOpacity(m_pressModelSet);
+    confirmSelect(m_pressModelSet);
+}
+
+void SketchWidget::confirmSelect(QSharedPointer<ModelSet> modelSet) {
+
+    m_prevModelSet.reset();
+    m_pressModelSet.reset();
+    m_savedModelSet.append(modelSet);
+    /*
+    if (modelSet->keyId() != -1) {
+        ItemBase * keyItem = findItem(modelSet->keyId());
+        if (keyItem != NULL) modelSet->setKeyItem(keyItem);
+    }*/
+
+    AutoCompleter::getSuggestionNext(modelSet, this);
+
+    return;
+}
+
+void SketchWidget::setOpacity(QSharedPointer<ModelSet> modelSet) {
+    if (modelSet.isNull()) return;
+
+    QList<ItemBase *> itemList = modelSet->getItemList();
+    if (itemList.length() == 0) return;
     foreach(ItemBase * item, itemList) {
         if (item->opacity() == 1) return;
         item->setOpacity(1);
     }
-
-    if (m_pressModelSet->keyId() != -1) {
-        ItemBase * keyItem = findItem(m_pressModelSet->keyId());
-        if (keyItem != NULL) m_pressModelSet->setKeyItem(keyItem);
-    }
-
-    m_prevModelSet.reset();
-    AutoCompleter::getSuggestionNext(m_pressModelSet, this);
-    m_pressModelSet.reset();
+    setOpacity(modelSet->setConnection());
 }
 
+void SketchWidget::setOpacity(QSharedPointer<SetConnection> setConnection) {
+    if (setConnection.isNull()) return;
+
+    QList<ItemBase *> itemList = setConnection->getWireList();
+    if (itemList.length() == 0) return;
+    foreach(ItemBase * item, itemList) {
+        if (item->opacity() == 1) return;
+        item->setOpacity(1);
+    }
+}

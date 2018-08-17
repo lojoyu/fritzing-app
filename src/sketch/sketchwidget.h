@@ -793,9 +793,12 @@ protected:
     ItemBase * addSetItem(ItemBase * fromItem, const QString & fromConnectorID, QString toModuleID, const QString & toConnectorID, bool transparent);
     ItemBase * addSetWire(ItemBase * fromItem, const QString & fromConnectorID, ItemBase * toItem, const QString & toConnectorID, bool transparent);
     void removePrevModelSet();
+    void removePrevSetConnection();
     void checkMousePressSuggestion(QGraphicsItem * item);
     void checkSelectSuggestion();
-
+    void confirmSelect(QSharedPointer<ModelSet> modelSet);
+    void setOpacity(QSharedPointer<ModelSet> modelSet);
+    void setOpacity(QSharedPointer<SetConnection> setConnection);
     
 
 protected:

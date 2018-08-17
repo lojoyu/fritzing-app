@@ -224,6 +224,3 @@ TARGET = Fritzing
 TEMPLATE = app
 
 message("libs $$LIBS")
-
-SOURCES += \
-    src/mainwindow/mainwindow_listdock.cpp

@@ -29,6 +29,7 @@ SOURCES += \
     src/mainwindow/mainwindow_export.cpp \    
     src/mainwindow/mainwindow_menu.cpp \
     src/mainwindow/mainwindow_dock.cpp \
+    src/mainwindow/mainwindow_listdock.cpp \
     src/mainwindow/sketchareawidget.cpp \
     
 
