@@ -8876,6 +8876,7 @@ void SketchWidget::removeRatsnestSlot(QList<ConnectorEdge *> & cutSet, QUndoComm
 }
 
 void SketchWidget::addDefaultParts() {
+    //autocompleteInit();
 }
 
 void SketchWidget::vScrollToZero() {

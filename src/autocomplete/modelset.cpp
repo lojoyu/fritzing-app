@@ -2,12 +2,17 @@
 
 #include "../debugdialog.h"
 
+const QList<QString> MICROCONTROLLER({"Arduino Uno (Rev3)"});
+
+
+typedef QPair<QString, QString> PairString;
+
 ModelSet::ModelSet() {
 
     m_keyItem = NULL;
     m_keyid = -1;
     m_keyLabel = "";
-    m_title = "";
+    m_keyTitle = "";
     m_setid = -1;
     m_single = true;
 
@@ -15,12 +20,12 @@ ModelSet::ModelSet() {
 
 ModelSet::ModelSet(long setid, QString title) {
     m_setid = setid;
-    m_title = title;
+    m_keyTitle = title;
     m_keyItem = NULL;
     m_keyid = -1;
     m_keyLabel = "";
-    m_title = "";
     m_single = true;
+    m_confirm = false;
 }
 
 ModelSet::~ModelSet() {
@@ -45,8 +50,22 @@ void ModelSet::insertTerminalHash(long id, Terminal t) {
     m_terminalHash.insert(id, t);
 }
 
+
+
 void ModelSet::insertTerminalnameHash(QString name, Terminal t) {
-    m_terminalnameHash.insert(name, t);
+    //m_terminalnameHash.insert(name, t);
+    QList<Terminal> terminalList;
+    if (m_terminalnameHash.contains(name)) {
+        terminalList = m_terminalnameHash[name];
+    }
+    if (!terminalList.contains(t))
+        terminalList.append(t);
+    m_terminalnameHash.insert(name, terminalList);
+    
+}
+
+void ModelSet::insertTerminalType(QString name, QString pintype) {
+    m_terminalType.insert(name, pintype);
 }
 
 QList<ModelSet::TerminalPair> ModelSet::getConnections() {
@@ -66,7 +85,7 @@ QList<ItemBase *> ModelSet::getItemList() {
     return m_itemList;
 }
 
-long ModelSet::getSetId() {
+long ModelSet::setId() {
     return m_setid;
 }
 
@@ -107,13 +126,48 @@ QPair<ItemBase *, QString> ModelSet::getItemAndCID(QString terminalName) {
     if (!m_terminalnameHash.contains(terminalName)) {
         return QPair<ItemBase *, QString>(NULL, "");
     }
-    Terminal t = m_terminalnameHash[terminalName];
+    QList<Terminal> tlist = m_terminalnameHash[terminalName];
+    Terminal t = tlist[0];
+    //Terminal t = m_terminalnameHash[terminalName];
     QString key = genLabelHashKey(t);
     if (!m_labelHash.contains(key)) {
         return QPair<ItemBase *, QString>(NULL, "");
     }
     ItemBase * item = m_labelHash[key];
     return QPair<ItemBase *, QString>(item, t.connectorID);
+}
+
+QList<QPair<ModelSet::Terminal, QString>> ModelSet::getPinTypeTerminal(QString pintype) {
+    QList<QPair<Terminal, QString>> terminalList;
+
+    foreach(QString terminalName, m_terminalType.keys()) {
+        QString pinGet = pinEqual(pintype, m_terminalType[terminalName]);
+        if (pinGet != "") {
+            if (m_terminalnameHash.contains(terminalName)) {
+                if (isMicrocontroller()) {
+                    foreach(Terminal t, m_terminalnameHash[terminalName]) {
+                        terminalList.append(QPair<ModelSet::Terminal, QString>(t, pinGet));
+                    }
+                } else {
+                    terminalList.append(QPair<ModelSet::Terminal, QString>(m_terminalnameHash[terminalName][0], pinGet));
+                }
+            }
+        }
+    }
+    return terminalList;    
+}
+
+QString ModelSet::pinEqual(QString pintype1, QString pintype2) {
+    if (pintype2.contains(pintype1)) return pintype1;
+
+    if (pintype1 == "VCC") {
+        
+        QRegularExpression re(QString("\\d.*V"));
+        QRegularExpressionMatch match = re.match(pintype2);
+        if (match.hasMatch()) return match.captured(0);
+        
+    } 
+    return "";
 }
 
 QString ModelSet::genLabelHashKey(Terminal t) {
@@ -129,6 +183,10 @@ qint64 ModelSet::keyId() {
     return m_keyid;
 }
 
+QString ModelSet::keyLabel() {
+    return m_keyLabel;
+}
+
 void ModelSet::setSingle(bool b) {
     m_single = b;
 }
@@ -141,18 +199,59 @@ void ModelSet::addSetConnection(QSharedPointer<SetConnection> s) {
     m_setConnection = s;
 }
 
+void ModelSet::addBreadboardConnection(QSharedPointer<SetConnection> s) {
+    m_breadboardConnection = s;
+}
+
 QSharedPointer<SetConnection> ModelSet::setConnection() {
     return m_setConnection;
+}
+
+QSharedPointer<SetConnection> ModelSet::breadboardConnection() {
+    return m_breadboardConnection;
 }
 
 void ModelSet::clearSetConnection() {
     m_setConnection.reset();
 }
 
+bool ModelSet::isConfirm() {
+    return m_confirm;
+}
+
+void ModelSet::setConfirm() {
+    m_confirm = true;
+}
+
+QList<QString> ModelSet::getConnectedTerminal() {
+    QList<QString> connectedName;
+
+    foreach(QSharedPointer<SetConnection> s, m_fromSetConnectionList) {
+        if (!s->isConfirm()) continue;
+        connectedName.append(s->getConnectedTerminal(0));
+    }
+    foreach(QSharedPointer<SetConnection> s, m_toSetConnectionList) {
+        if (!s->isConfirm()) continue;
+        connectedName.append(s->getConnectedTerminal(1));
+    }
+    return connectedName;
+}
+
+void ModelSet::appendSetConnectionList(int ind, QSharedPointer<SetConnection> setConnection) {
+    if (ind == 0) m_fromSetConnectionList.append(setConnection);
+    else if (ind == 1) m_toSetConnectionList.append(setConnection);
+}
+
+
+bool ModelSet::isMicrocontroller() {
+    return MICROCONTROLLER.contains(m_keyTitle);
+}
+
 
 ///////
 
 SetConnection::SetConnection() {
+    
 }
 
 SetConnection::SetConnection(QSharedPointer<ModelSet> m1, QSharedPointer<ModelSet> m2) {
@@ -169,7 +268,13 @@ void SetConnection::appendConnection2(long id1, long id2) {
 }
 
 void SetConnection::appendConnection(QString name1, QString name2) {
-    m_connectionList.append(QPair<QString, QString>(name1, name2));
+    Connection c(name1, name2);
+    m_connectionList.append(c);
+}
+
+void SetConnection::appendConnection(QString name1, QString name2, QColor color) {
+    Connection c(name1, name2, color, true);
+    m_connectionList.append(c);
 }
 
 QList<ItemBase *> SetConnection::getWireList() {
@@ -189,7 +294,7 @@ QList<QPair<long, long>> SetConnection::getConnectionList2() {
 
 }
 
-QList<QPair<QString, QString>> SetConnection::getConnectionList() {
+QList<SetConnection::Connection> SetConnection::getConnectionList() {
     return m_connectionList;
 
 }
@@ -201,3 +306,21 @@ QSharedPointer<ModelSet> SetConnection::getFromModelSet() {
 QSharedPointer<ModelSet> SetConnection::getToModelSet() {
     return m_toModelSet;
 }
+
+bool SetConnection::isConfirm() {
+    return m_confirm;
+}
+
+void SetConnection::setConfirm() {
+    m_confirm = true;
+}
+
+QList<QString> SetConnection::getConnectedTerminal(int ind) {
+    QList<QString> connectedName;
+    foreach(Connection c, m_connectionList) {
+        if (ind == 0) connectedName.append(c.fromTerminal); 
+        else if (ind == 1) connectedName.append(c.toTerminal);
+    }
+    return connectedName;
+}
+

@@ -783,9 +783,13 @@ protected:
 public:
     void setAutoComplete(bool);
 
+    QList<QSharedPointer<ModelSet>> getSavedModelSets();
+
 public slots:
     void addModelSet(QSharedPointer<ModelSet>, bool transparent);
     void addSetToSet(QSharedPointer<ModelSet> modelSet, QSharedPointer<SetConnection> setconnection, bool transparent);
+    QSharedPointer<ModelSet> getMicrocontroller();
+    void autocompleteInit();
 
 protected:
     void addSetConnection(QSharedPointer<SetConnection> setconnection, bool transparent);
@@ -793,13 +797,17 @@ protected:
     ItemBase * addSetItem(ItemBase * fromItem, const QString & fromConnectorID, QString toModuleID, const QString & toConnectorID, bool transparent);
     ItemBase * addSetWire(ItemBase * fromItem, const QString & fromConnectorID, ItemBase * toItem, const QString & toConnectorID, bool transparent);
     void removePrevModelSet();
-    void removePrevSetConnection();
+    void removePrevSetConnection(bool removeBreadboard);
     void checkMousePressSuggestion(QGraphicsItem * item);
     void checkSelectSuggestion();
     void confirmSelect(QSharedPointer<ModelSet> modelSet);
     void setOpacity(QSharedPointer<ModelSet> modelSet);
     void setOpacity(QSharedPointer<SetConnection> setConnection);
-    
+    //void completeVoltage(QSharedPointer<ModelSet> modelset);
+    void completeSuggestion(QSharedPointer<ModelSet> modelset, bool transparent);
+    void findKeyItem(QSharedPointer<ModelSet> modelSet);
+    QString findBreadBoardUnused(QList<QString> connectorIDList, QList<QString> excludeConnectorIDList, bool checkConnected);
+    //QString findBreadBoardUnused(QList<QString> connectorIDList, QList<QString> excludeConnectorIDList);
 
 protected:
 	bool m_autoComplete;
@@ -807,7 +815,8 @@ protected:
     QSharedPointer<ModelSet> m_pressModelSet;
     QSharedPointer<SetConnection> m_prevSetConnection;
     QList<QSharedPointer<ModelSet>> m_savedModelSet;
-
+    QHash<QString, QString> m_breadBoardPin; //pintype,
+    QSharedPointer<ModelSet> m_breadBoardModelSet;
 
 };
 

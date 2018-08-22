@@ -2370,6 +2370,7 @@ void MainWindow::addDefaultParts() {
 	m_pcbGraphicsView->addDefaultParts();
 	m_breadboardGraphicsView->addDefaultParts();
 	m_schematicGraphicsView->addDefaultParts();
+
 }
 
 MainWindow * MainWindow::newMainWindow(ReferenceModel *referenceModel, const QString & displayPath, bool showProgress, bool lockFiles, int initialTab) {

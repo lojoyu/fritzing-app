@@ -13,11 +13,12 @@ class AutocompleteDBManager {
 		static void loadDB(const QString & databasemname);
         static QList<QMap<QString, QVariant> *> getModelSet(QString title);
         static QList<QPair<long, long>> getFrequentConnect(long setid, int max);
+        static QList<QPair<long, long>> getFrequentConnect(long setid, int max, QList<QString> nameList);
 	    static QList<QMap<QString, QVariant> *> getConnectionsByID(QList<long> ids);
 	   	static QList<QMap<QString, QVariant> *> getModelSetsByID(QList<long> ids);
 	    static QMap<QString, QVariant> * getConnectionByID(long id);
 		static QMap<QString, QVariant> * getModelSetByID(long id);
-
+		static QList<QMap<QString, QVariant> *> getConnectionsByModuleID(long mid, QList<long> mids);
 
 	protected:
         QList<QMap<QString, QVariant> *> selectModelSet(QString title);
@@ -26,7 +27,8 @@ class AutocompleteDBManager {
         QList<QMap<QString, QVariant> *> selectModelSetsByID(QList<long> ids);
         QMap<QString, QVariant> * selectModelSetByID(long id);
 		QList<QPair<long, long>> selectFrequentConnect(long setid, int max);
-
+        QList<QPair<long, long>> selectFrequentConnect(long setid, int max, QList<QString> nameList);
+		QList<QMap<QString, QVariant> *> selectConnectionsByModuleID(long mid, QList<long> mids);
 
 		void deleteConnection();
 

@@ -97,6 +97,14 @@ QList<QPair<long, long>> AutocompleteDBManager::getFrequentConnect(long setid, i
     return singleton->selectFrequentConnect(setid, max);
 }
 
+QList<QPair<long, long>> AutocompleteDBManager::getFrequentConnect(long setid, int max, QList<QString> nameList) {
+    if (singleton == NULL) {
+        singleton = new AutocompleteDBManager(defaultname);
+    }
+    if (nameList.length() == 0) return singleton->selectFrequentConnect(setid, max);
+    else return singleton->selectFrequentConnect(setid, max, nameList);
+}
+
 QList<QMap<QString, QVariant> *> AutocompleteDBManager::getConnectionsByID(QList<long> ids) {
     if (singleton == NULL) {
 		singleton = new AutocompleteDBManager(defaultname);
@@ -124,6 +132,14 @@ QMap<QString, QVariant> * AutocompleteDBManager::getModelSetByID(long id) {
 	}
     return singleton->selectModelSetByID(id);
 }
+
+QList<QMap<QString, QVariant> *> AutocompleteDBManager::getConnectionsByModuleID(long mid, QList<long> mids) {
+    if (singleton == NULL) {
+        singleton = new AutocompleteDBManager(defaultname);
+    }
+    return singleton->selectConnectionsByModuleID(mid, mids);
+}
+
 /*
 AutocompleteDBManager::getNextSet(QString title) {
 	if (singleton == NULL) {
@@ -182,6 +198,41 @@ QList<QPair<long, long>> AutocompleteDBManager::selectFrequentConnect(long setid
 	}
 
 	return toList;
+}
+
+QList<QPair<long, long>> AutocompleteDBManager::selectFrequentConnect(long setid, int max, QList<QString> nameList) {
+    QList<QPair<long, long>> toList;
+
+    QString valueStr = "";
+    int ind = 1;
+    foreach(QString name, nameList) {
+        if (ind != 1) {
+            valueStr += ",";
+        }
+        valueStr += QString("'%1'").arg(name);
+        ind++;
+    }
+
+    QString queryStr = QString("SELECT id, to_module_id FROM connections "
+    "WHERE module_id = %1 AND "
+    "id NOT IN "
+    "(SELECT DISTINCT(connection_id) FROM terminals_connections "
+    "WHERE terminal_id IN (%2)) "
+    "ORDER BY count DESC, id LIMIT %3").arg(setid).arg(valueStr).arg(max);
+    DebugDialog::debug(QString("select frequent connect %1").arg(queryStr));
+
+    QSqlQuery query(m_database);
+    query.prepare(queryStr);
+    //query.bindValue(0,title);
+    if (query.exec()) {
+        while(query.next()) {
+            toList.append(QPair<long, long>(query.value(0).toLongLong(), query.value(1).toLongLong()));
+        }
+    } else {
+        m_debugExec(QString("couldn't select frequent connect of %1").arg(setid), query);
+    }
+
+    return toList;
 }
 
 QList<QMap<QString, QVariant> *> AutocompleteDBManager::selectConnectionsByID(QList<long> ids) {
@@ -267,14 +318,20 @@ QList<QMap<QString, QVariant> *> AutocompleteDBManager::selectModelSetsByID(QLis
             orderStr += ",";
         }
         valueStr += QString("%1").arg(id);
-        orderStr += QString("module_id=%1 DESC").arg(id);
+        orderStr += QString("mc.module_id=%1 DESC").arg(id);
         ind++;
     }
     DebugDialog::debug(valueStr);
     DebugDialog::debug(orderStr);
 
-    QString queryStr = QString("SELECT * FROM modules_components "
-    "WHERE module_id IN (%1) "
+//    QString queryStr = QString("SELECT * FROM modules_components "
+//    "WHERE module_id IN (%1) "
+//    "ORDER BY %2").arg(valueStr).arg(orderStr);
+
+    QString queryStr = QString("SELECT c.title, mc.* FROM modules_components mc "
+    "INNER JOIN modules m ON m.id=mc.module_id "
+    "INNER JOIN components c ON c.id=m.component_id "
+    "WHERE mc.module_id IN (%1) "
     "ORDER BY %2").arg(valueStr).arg(orderStr);
 
     QSqlQuery query(m_database);
@@ -319,6 +376,46 @@ QMap<QString, QVariant> * AutocompleteDBManager::selectModelSetByID(long id) {
 	}
     return map;
 }
+
+QList<QMap<QString, QVariant> *> AutocompleteDBManager::selectConnectionsByModuleID(long mid, QList<long> mids) {
+    QList<QMap<QString, QVariant> *> mapList;
+
+    QString valueStr = "";
+    int ind = 1;
+    foreach(long id, mids) {
+        if (ind != 1) {
+            valueStr += ",";
+        }
+        valueStr += QString("%1").arg(id);
+        ind++;
+    }
+    
+    QString queryStr = QString("SELECT c.*, tc.* FROM terminals_connections tc "
+    "INNER JOIN connections c "
+    "ON c.id = tc.connection_id "
+    "WHERE c.module_id = %1 AND c.to_module_id IN (%2) "
+    "ORDER BY c.count DESC, c.id").arg(mid).arg(valueStr);
+
+    QSqlQuery query(m_database);
+    query.prepare(queryStr);
+    //query.bindValue(":values",valueStr);
+    if (query.exec()) {
+        while(query.next()) {
+            QMap<QString, QVariant> * map = new QMap<QString, QVariant>();
+            QSqlRecord record = query.record();
+            for (int i=0; i<record.count(); i++) {
+                map->insert(record.fieldName(i), record.value(i));
+                //DebugDialog::debug("result " + record.fieldName(i) + " " + record.value(i).toString());
+            }
+            mapList.append(map);
+        }
+
+    } else {
+        m_debugExec(QString("couldn't find connection of %1").arg(valueStr), query);
+    }
+    return mapList;
+}
+
 /*
 AutocompleteDBManager::selectNextSet(long setid) {
 	SELECT ? FROM connections c

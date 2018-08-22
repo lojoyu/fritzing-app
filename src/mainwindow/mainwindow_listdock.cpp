@@ -58,14 +58,15 @@ void MainWindow::onItemClickedSlot(QListWidgetItem* listitem) {
 }
 
 void MainWindow::onItemEvent(QListWidgetItem* listitem, bool hover) {
-
+    //if (!hover) m_recommendlist->removeItemWidget(listitem);
     QVariantList itemDataV = listitem->data(Qt::UserRole).toList();
     SuggestionType type = (SuggestionType)itemDataV[0].toInt();
     if (type == SuggestionType::toModelSet) {
-        m_sketchwidget->addModelSet(itemDataV[1].value<QSharedPointer<ModelSet>>(), hover) ;
+        m_sketchwidget->addModelSet(itemDataV[1].value<QSharedPointer<ModelSet>>(), hover);
     } else {
         m_sketchwidget->addSetToSet(itemDataV[1].value<QSharedPointer<ModelSet>>(), itemDataV[2].value<QSharedPointer<SetConnection>>(),  hover) ;
     }
+
 }
 
 void MainWindow::onItemEnteredSlot(QListWidgetItem* listitem){
