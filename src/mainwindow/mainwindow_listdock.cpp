@@ -90,7 +90,6 @@ void MainWindow::setTosetList(QList<QSharedPointer<ModelSet>> toModelsetList, QL
 
 void MainWindow::setmodelSetList(QList<QSharedPointer<ModelSet>> modelSetList){
 
-
     m_recommendlist->clear() ;
 
     for (int i = 0 ; i < modelSetList.length() ; i++) {
@@ -101,6 +100,7 @@ void MainWindow::setmodelSetList(QList<QSharedPointer<ModelSet>> modelSetList){
         item->setData(Qt::UserRole, itemData);
         m_recommendlist->insertItem(i ,item) ;
     }
+    m_sketchwidget->addModelSet(modelSetList[0], true);
 
 }
 

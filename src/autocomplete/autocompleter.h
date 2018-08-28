@@ -25,6 +25,8 @@ public:
     static void getSuggestionNext(QSharedPointer<ModelSet> modelset, SketchWidget * sketchWidget);
     static void getSuggestionExist(QSharedPointer<ModelSet> modelset, SketchWidget * sketchWidget);
 	static void test();
+    static void getSuggestionConnection(QSharedPointer<ModelSet> fromModelset, ConnectorItem * fromConnectorItem, 
+                QSharedPointer<ModelSet> toModelSet, ConnectorItem * toConnectorItem, SketchWidget * sketchWidget);
 
 signals:
     void addModelSetSignal(QList<QSharedPointer<ModelSet>>);
@@ -34,6 +36,8 @@ protected:
     void getSuggestionSetSelf(ItemBase * item, SketchWidget * sketchWidget);
     void getSuggestionNextSelf(QSharedPointer<ModelSet> modelset, SketchWidget * sketchWidget);
     void getSuggestionExistSelf(QSharedPointer<ModelSet> modelset, SketchWidget * sketchWidget);
+    void getSuggestionConnectionSelf(QSharedPointer<ModelSet> fromModelset, ConnectorItem * fromConnectorItem, 
+                QSharedPointer<ModelSet> toModelSet, ConnectorItem * toConnectorItem, SketchWidget * sketchWidget);
 	QString getModuleID(QString title, SketchWidget * sketchWidget);
     QString getModuleIDByTitle(QString title, SketchWidget * sketchWidget);
     QString findRestModuleID(QString title);
@@ -44,9 +48,10 @@ protected:
     //void addModelSet(QSharedPointer<ModelSet>);
     
 
+
 protected:
 	//new
-    int m_maxSuggestion = 5;
+    int m_maxSuggestion = 10;
 	static AutoCompleter* singleton;
 	//class SketchWidget* m_sketchwidget;
     QHash<QString, QString> m_titleToModuleID;

@@ -3741,12 +3741,20 @@ void SketchWidget::wireChangedSlot(Wire* wire, const QLineF & oldLine, const QLi
 	this->clearHoldingSelectItem();
 	this->m_moveEventCount = 0;  // clear this so an extra MoveItemCommand isn't posted
 
+	// if (m_autoComplete) {
+	// 	AutoCompleter::getSuggestionConnection(wire, SketchWidget);
+	// }
+    DebugDialog::debug(QString("from: %1, to:%2").arg(from->attachedTo()->title()).arg(to->attachedTo()->title()));
+    getSuggestionConnection(wire, to);
+
+
 	// TODO: make sure all these pointers to pointers to pointers aren't null...
 
 	if (wire == this->m_connectorDragWire) {
 		dragWireChanged(wire, from, to);
 		return;
 	}
+
 
 	clearDragWireTempCommand();
 	if ((to != NULL) && from->connectedToItems().contains(to)) {

@@ -187,6 +187,10 @@ QString ModelSet::keyLabel() {
     return m_keyLabel;
 }
 
+QString ModelSet::keyTitle() {
+    return m_keyTitle;
+}
+
 void ModelSet::setSingle(bool b) {
     m_single = b;
 }
@@ -247,6 +251,16 @@ bool ModelSet::isMicrocontroller() {
     return MICROCONTROLLER.contains(m_keyTitle);
 }
 
+QString ModelSet::getTerminalName(QString moduleID, QString connectorID) {
+    foreach(QString name, m_terminalnameHash.keys()) {
+        QList<Terminal> tlist = m_terminalnameHash[name];
+        foreach(Terminal t, tlist) {
+            if (t.moduleID == moduleID && t.connectorID == connectorID) return name;
+        }
+    }
+    return "";
+}
+
 
 ///////
 
@@ -257,6 +271,7 @@ SetConnection::SetConnection() {
 SetConnection::SetConnection(QSharedPointer<ModelSet> m1, QSharedPointer<ModelSet> m2) {
     m_fromModelSet = m1;
     m_toModelSet = m2;
+    m_confirm = false;
 }
 
 SetConnection::~SetConnection() {

@@ -808,6 +808,8 @@ protected:
     void findKeyItem(QSharedPointer<ModelSet> modelSet);
     QString findBreadBoardUnused(QList<QString> connectorIDList, QList<QString> excludeConnectorIDList, bool checkConnected);
     //QString findBreadBoardUnused(QList<QString> connectorIDList, QList<QString> excludeConnectorIDList);
+    void getSuggestionConnection(Wire * wire, ConnectorItem * to);
+    ConnectorItem * findConnectorItemTo(ConnectorItem * connectorItem, ConnectorItem * excludeConnector);
 
 protected:
 	bool m_autoComplete;
@@ -817,6 +819,7 @@ protected:
     QList<QSharedPointer<ModelSet>> m_savedModelSet;
     QHash<QString, QString> m_breadBoardPin; //pintype,
     QSharedPointer<ModelSet> m_breadBoardModelSet;
+    QPointF m_tempPoint = QPointF(0, 0);
 
 };
 

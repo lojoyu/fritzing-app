@@ -87,6 +87,16 @@ void AutoCompleter::getSuggestionExist(QSharedPointer<ModelSet> modelset, Sketch
     singleton->getSuggestionExistSelf(modelset, sketchWidget);
 }
 
+void AutoCompleter::getSuggestionConnection(QSharedPointer<ModelSet> fromModelset, ConnectorItem * fromConnectorItem, 
+    QSharedPointer<ModelSet> toModelSet, ConnectorItem * toConnectorItem, SketchWidget * sketchWidget) {
+    if (singleton == NULL) {
+        singleton = new AutoCompleter();
+    }
+    singleton->getSuggestionConnectionSelf(fromModelset, fromConnectorItem, toModelSet, toConnectorItem, sketchWidget);
+
+}
+
+
 void AutoCompleter::getSuggestionSetSelf(ItemBase * item, SketchWidget * sketchWidget) {
 
     QString title = item->title();
@@ -104,7 +114,6 @@ void AutoCompleter::getSuggestionSetSelf(ItemBase * item, SketchWidget * sketchW
             //completeVoltage(modelSetList[0]);
             //getSuggestionNextSelf(modelSetList[0], sketchWidget);
         } else {
-            sketchWidget->addModelSet(modelSetList[0], true);
             emit addModelSetSignal(modelSetList);
             //sketchWidget->addModelSet(modelSetList[0], true);
         }
@@ -124,9 +133,10 @@ void AutoCompleter::mapListToModelSet(ItemBase * keyItem, SketchWidget * sketchW
             }
             setid = nowid;
             modelSet = QSharedPointer<ModelSet>(new ModelSet(nowid, title));
+            // if there is microcontroller on the breadboard, use that one
             if (modelSet->isMicrocontroller()) {
                 QSharedPointer<ModelSet> ms = sketchWidget->getMicrocontroller();
-                if (!ms.isNull()) modelSet = ms;
+                if (!ms.isNull() && modelSet->keyTitle() == ms->keyTitle()) modelSet = ms;
             }
             modelSetList.append(modelSet);
             modelSet->setSingle(true);
@@ -135,8 +145,10 @@ void AutoCompleter::mapListToModelSet(ItemBase * keyItem, SketchWidget * sketchW
         QString title1 = map["component_title"].toString();
         QString title2 = map["to_component_title"].toString();
         
+        //TODO: change to moduleid -> categorize!
         QString m1 = getModuleIDByTitle(title1, sketchWidget);
         QString m2 = getModuleIDByTitle(title2, sketchWidget);
+
         ModelSet::Terminal t1 = ModelSet::Terminal(m1, title1, map["component_label"].toString(), map["component_terminal"].toString(), map["type"].toString());
         ModelSet::Terminal t2 = ModelSet::Terminal(m2, title2, map["to_component_label"].toString(), map["to_component_terminal"].toString(), map["type"].toString());
         modelSet->appendConnection(t1, t2);
@@ -255,6 +267,34 @@ void AutoCompleter::getSuggestionExistSelf(QSharedPointer<ModelSet> modelset, Sk
 
 } 
 
+void AutoCompleter::getSuggestionConnectionSelf(QSharedPointer<ModelSet> fromModelset, ConnectorItem * fromConnectorItem, 
+        QSharedPointer<ModelSet> toModelset, ConnectorItem * toConnectorItem, SketchWidget * sketchWidget) {
+
+    QList<QPair<QString, QString>> stringpair;
+    QString fromConnectorID = fromConnectorItem->connectorSharedID();
+    QString toConnectorID = toConnectorItem->connectorSharedID();
+    QString fromName = fromModelset->getTerminalName(fromModelset->keyItem()->moduleID(), fromConnectorID);
+    QString toName = toModelset->getTerminalName(toModelset->keyItem()->moduleID(), toConnectorID);
+
+    stringpair.append(QPair<QString, QString>(fromName, toName));
+
+    QList<QMap<QString, QVariant> *> connectionList = AutocompleteDBManager::getConnectionsBetweenModules(fromModelset->setId(), toModelset->setId(), stringpair);
+    QList<QSharedPointer<SetConnection>> setConnectionList;
+    QList<QSharedPointer<ModelSet>> existModelset;
+    existModelset.append(toModelset);
+    mapListToSetConnection(fromModelset, existModelset, connectionList, setConnectionList, false);
+
+    qDeleteAll(connectionList);
+    connectionList.clear();
+    if (setConnectionList.length() > 0) {
+        sketchWidget->addSetToSet(toModelset, setConnectionList[0], true);
+        emit addSetConnectionSignal(existModelset, setConnectionList);
+    }
+
+
+}
+
+
 QString AutoCompleter::getModuleIDByTitle(QString title, SketchWidget * sketchWidget) {
     if (m_titleToModuleID.contains(title)) return m_titleToModuleID[title];
     else {
@@ -302,6 +342,8 @@ QString AutoCompleter::findRestModuleID(QString title) {
     }
 
     //TODO: IC
+
+
 
     //TODO: Generic Female/Male header 
 

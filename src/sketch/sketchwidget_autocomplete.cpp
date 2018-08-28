@@ -35,12 +35,21 @@ void SketchWidget::autocompleteInit() {
 
 void SketchWidget::addSetToSet(QSharedPointer<ModelSet> modelSet, QSharedPointer<SetConnection> setconnection, bool transparent) {
     QSharedPointer<ModelSet> temp = m_prevModelSet;
+    QSharedPointer<ModelSet> from = setconnection->getFromModelSet();
+    findKeyItem(from);
+    if (from->keyItem()!=NULL) {
+        m_tempPoint = from->keyItem()->getViewGeometry().loc()+from->keyItem()->boundingRect().center();
+        m_tempPoint = m_tempPoint-QPoint(90, 0);
+    }
     addModelSet(modelSet, transparent);
-    if (transparent || temp!=modelSet) addSetConnection(setconnection, transparent);
+    addSetConnection(modelSet->breadboardConnection(), transparent);
+    //if (transparent || temp!= modelSet)
+    addSetConnection(setconnection, transparent);
     modelSet->addSetConnection(setconnection);
 }
 
 void SketchWidget::addSetConnection(QSharedPointer<SetConnection> setconnection, bool transparent) {
+    if (setconnection.isNull() || setconnection->isConfirm()) return;
     QSharedPointer<ModelSet> from = setconnection->getFromModelSet();
     QSharedPointer<ModelSet> to = setconnection->getToModelSet();
     if (from.isNull() || to.isNull()) return;
@@ -94,13 +103,13 @@ void SketchWidget::addSetConnection(QSharedPointer<SetConnection> setconnection,
 
 void SketchWidget::addModelSet(QSharedPointer<ModelSet> modelSet, bool transparent) {
 
+    findKeyItem(modelSet);
     //m_savedModelSet.append(modelSet);
     if (modelSet == m_prevModelSet) {
+        removePrevSetConnection(false);
         if (!transparent) {
             setOpacity(modelSet);
             confirmSelect(modelSet);
-        } else {
-            removePrevSetConnection(false);
         }
         return;
     }
@@ -108,7 +117,7 @@ void SketchWidget::addModelSet(QSharedPointer<ModelSet> modelSet, bool transpare
 
     if (modelSet.isNull()) return;
     m_prevModelSet = modelSet;
-    findKeyItem(modelSet);
+
 
     QList<ModelSet::TerminalPair> connectionList = modelSet->getConnections();
     foreach(ModelSet::TerminalPair c, connectionList) {
@@ -116,7 +125,9 @@ void SketchWidget::addModelSet(QSharedPointer<ModelSet> modelSet, bool transpare
         ModelSet::Terminal to = c.second;
         ItemBase * fromItem = modelSet->getItem(modelSet->genLabelHashKey(from));
         if (fromItem == NULL) {
-            fromItem = addSetItem(QPointF(0, 0), from.moduleID, transparent);
+            if (from.title == "Arduino Uno (Rev3)") m_tempPoint = QPointF(100, 300);
+            fromItem = addSetItem(m_tempPoint, from.moduleID, transparent);
+
             if (fromItem == NULL) {
                 continue;
             }
@@ -160,6 +171,7 @@ void SketchWidget::addModelSet(QSharedPointer<ModelSet> modelSet, bool transpare
 
 void SketchWidget::findKeyItem(QSharedPointer<ModelSet> modelSet) {
     //TODO: change to command type
+    if (modelSet.isNull()) return;
     ItemBase * keyItem = modelSet->keyItem();
     long id = modelSet->keyId();
     keyItem = findItem(id);
@@ -174,7 +186,7 @@ void SketchWidget::removePrevModelSet() {
 
     if (m_prevModelSet.isNull()) return;
     if (!m_prevModelSet->isConfirm()) {
-    QList<ItemBase *> itemList = m_prevModelSet->getItemList();
+        QList<ItemBase *> itemList = m_prevModelSet->getItemList();
         foreach(ItemBase * itemBase, itemList) {
             //itemBase->removeLayerKin();
             this->scene()->removeItem(itemBase);
@@ -196,8 +208,8 @@ void SketchWidget::removePrevSetConnection(bool removeBreadboard) {
     QSharedPointer<SetConnection> breadboardConnection = m_prevModelSet->breadboardConnection();
     if (setConnection.isNull() && breadboardConnection.isNull()) return;
     QList<ItemBase *> itemList;
-    if (!setConnection.isNull()) itemList.append(setConnection->getWireList());
-    if (!breadboardConnection.isNull() && removeBreadboard) itemList.append(breadboardConnection->getWireList());
+    if (!setConnection.isNull() && !setConnection->isConfirm()) itemList.append(setConnection->getWireList());
+    if (!breadboardConnection.isNull() && removeBreadboard && !breadboardConnection->isConfirm()) itemList.append(breadboardConnection->getWireList());
 
     foreach(ItemBase * itemBase, itemList) {
         //itemBase->removeLayerKin();
@@ -208,7 +220,7 @@ void SketchWidget::removePrevSetConnection(bool removeBreadboard) {
         delete itemBase;
     }
     if (!setConnection.isNull()) setConnection->emptyWireList();
-    if (!breadboardConnection.isNull() && removeBreadboard) breadboardConnection->emptyWireList();
+    if (!breadboardConnection.isNull() && removeBreadboard && !breadboardConnection->isConfirm()) breadboardConnection->emptyWireList();
     m_prevModelSet->clearSetConnection();
 
 }
@@ -262,7 +274,8 @@ ItemBase * SketchWidget::addSetItem(QPointF pos, QString & toModuleID, bool tran
 	long toID = ItemBase::getNextID();
 	bool doConnectors = true;
 	ItemBase *toItem = addItemAuxTemp(modelPart, defaultViewLayerPlacement(modelPart), viewGeometry, toID, doConnectors, m_viewID, false);
-    toItem->setPos(pos);
+
+    toItem->setPos(pos-toItem->boundingRect().center());
 
     if (transparent) toItem->setOpacity(0.5);
 
@@ -311,11 +324,11 @@ ItemBase * SketchWidget::addSetItem(ItemBase * fromItem, const QString & fromCon
             QPointF terminalOffset = toPos-toConnectorPos;
             QPointF fromCenter = fromItem->getViewGeometry().loc()+fromItem->boundingRect().center();
             if (fromCenter.x()- fromOverPos.x() > 0) {
-				offset.setX(-36);
+                offset.setX(-27);
 			} else {
-				offset.setX(36);
+                offset.setX(27);
 			}
-
+            offset.setY(9);
 			toItem->setPos(fromOverPos+terminalOffset+offset);
         }
         if (transparent) toItem->setOpacity(0.5);
@@ -326,6 +339,74 @@ ItemBase * SketchWidget::addSetItem(ItemBase * fromItem, const QString & fromCon
         return toItem;
 	}
     return NULL;
+
+}
+
+void SketchWidget::getSuggestionConnection(Wire *wire, ConnectorItem * to) {
+    if (!m_autoComplete) return;
+
+    ConnectorItem * toConnectorItem = NULL;
+    if (to->attachedTo() != m_breadBoardModelSet->keyItem()) {
+        toConnectorItem = to;
+    } else {
+        QList<ConnectorItem *> connectorItems;
+        connectorItems.append(to);
+        ConnectorItem::collectEqualPotential(connectorItems, true, ViewGeometry::NoFlag);
+        foreach(ConnectorItem * citem, connectorItems) {
+            ItemBase * item = citem->attachedTo();
+            QString s = citem->attachedTo()->title();
+            if (item != m_breadBoardModelSet->keyItem() && item != wire) {
+                toConnectorItem = citem;
+                //break;
+            }
+        }
+    }
+
+    ConnectorItem * connector0 = wire->connector0();
+    ConnectorItem * fromConnectorItem = findConnectorItemTo(connector0, toConnectorItem);
+    //ConnectorItem * connector1 = wire->connector1();
+    //ConnectorItem * toConnectorItem = findConnectorItemTo(connector1, NULL);
+    if (fromConnectorItem == NULL || toConnectorItem == NULL) return;
+
+
+    DebugDialog::debug(QString("%1 attached to : %2").arg(fromConnectorItem->connectorSharedID()).arg(fromConnectorItem->attachedTo()->title()));
+    DebugDialog::debug(QString("attached to : %1").arg(toConnectorItem->attachedTo()->title()));
+
+    foreach (QSharedPointer<ModelSet> ms, m_savedModelSet) {
+        findKeyItem(ms);
+    }
+
+    QSharedPointer<ModelSet> fromModelSet = fromConnectorItem->attachedTo()->modelSet();
+    QSharedPointer<ModelSet> toModelSet = toConnectorItem->attachedTo()->modelSet();
+    if (fromModelSet.isNull() || toModelSet.isNull()) return;
+
+    AutoCompleter::getSuggestionConnection(fromModelSet, fromConnectorItem, toModelSet, toConnectorItem, this);
+
+}
+
+ConnectorItem * SketchWidget::findConnectorItemTo(ConnectorItem * connectorItem, ConnectorItem * excludeConnector){
+    ConnectorItem * fromConnectorItem = NULL;
+    QList<ConnectorItem *> exclude;
+    if (excludeConnector != NULL) exclude.append(excludeConnector);
+    ConnectorItem * under = connectorItem->findConnectorUnder(true, true, exclude, false, NULL);
+    if (under == NULL) return NULL;
+
+    if (under->attachedTo() == m_breadBoardModelSet->keyItem()) {
+        QList<ConnectorItem *> connectorItems;
+        connectorItems.append(connectorItem);
+        ConnectorItem::collectEqualPotential(connectorItems, true, ViewGeometry::NoFlag);
+        foreach(ConnectorItem * citem, connectorItems) {
+            ItemBase * item = citem->attachedTo();
+            QString s = citem->attachedTo()->title();
+            if (item != m_breadBoardModelSet->keyItem() && item != connectorItem->attachedTo()) {
+                fromConnectorItem = citem;
+                //break;
+            }
+        }
+    } else {
+        fromConnectorItem = under;
+    }
+    return fromConnectorItem;
 
 }
 
@@ -402,6 +483,7 @@ void SketchWidget::completeSuggestion(QSharedPointer<ModelSet> modelset, bool tr
     if (!setconnection.isNull()) {
         addSetConnection(setconnection, transparent);
         modelset->addSetConnection(setconnection);
+        if (!transparent) setconnection->setConfirm();
     }
 
 }

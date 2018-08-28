@@ -12,6 +12,8 @@
 #include "../debugdialog.h"
 //#include "modelset.h"
 
+typedef QPair<QString, QString> StringPair;
+
 static const QString defaultname = "autocomplete.db";
 // table, field name
 static const QMap<QString, QString> components = {
@@ -140,6 +142,13 @@ QList<QMap<QString, QVariant> *> AutocompleteDBManager::getConnectionsByModuleID
     return singleton->selectConnectionsByModuleID(mid, mids);
 }
 
+QList<QMap<QString, QVariant> *> AutocompleteDBManager::getConnectionsBetweenModules(long mid1, long mid2, QList<QPair<QString, QString>> includePair) {
+    if (singleton == NULL) {
+        singleton = new AutocompleteDBManager(defaultname);
+    }
+    return singleton->selectConnectionsBetweenModules(mid1, mid2, includePair);
+}
+
 /*
 AutocompleteDBManager::getNextSet(QString title) {
 	if (singleton == NULL) {
@@ -183,9 +192,13 @@ QList<QMap<QString, QVariant> *> AutocompleteDBManager::selectModelSet(QString t
 
 QList<QPair<long, long>> AutocompleteDBManager::selectFrequentConnect(long setid, int max) {
 	QList<QPair<long, long>> toList;
-	QString queryStr = QString("SELECT id, to_module_id FROM connections "
-		"WHERE module_id=%1 "
-		"ORDER BY count DESC LIMIT %2").arg(setid).arg(max);
+    QString queryStr = QString("SELECT id, to_module_id, sum(count) as sum FROM "
+        "(SELECT * FROM connections WHERE module_id=%1 ORDER BY count) "
+        "GROUP BY to_module_id ORDER BY sum DESC LIMIT %2").arg(setid).arg(max);
+
+	// QString queryStr = QString("SELECT id, to_module_id FROM connections "
+	// 	"WHERE module_id=%1 "
+	// 	"ORDER BY count DESC LIMIT %2").arg(setid).arg(max);
 	QSqlQuery query(m_database);
     query.prepare(queryStr);
     //query.bindValue(0,title);
@@ -212,13 +225,20 @@ QList<QPair<long, long>> AutocompleteDBManager::selectFrequentConnect(long setid
         valueStr += QString("'%1'").arg(name);
         ind++;
     }
-
-    QString queryStr = QString("SELECT id, to_module_id FROM connections "
+    QString queryStr = QString("SELECT id, to_module_id, sum(count) as sum FROM "
+    "(SELECT * FROM connections "
     "WHERE module_id = %1 AND "
     "id NOT IN "
     "(SELECT DISTINCT(connection_id) FROM terminals_connections "
-    "WHERE terminal_id IN (%2)) "
-    "ORDER BY count DESC, id LIMIT %3").arg(setid).arg(valueStr).arg(max);
+    "WHERE terminal_id IN (%2)) ORDER BY count)"
+    "GROUP BY to_module_id ORDER BY sum DESC LIMIT %3").arg(setid).arg(valueStr).arg(max);
+
+    // QString queryStr = QString("SELECT id, to_module_id FROM connections "
+    // "WHERE module_id = %1 AND "
+    // "id NOT IN "
+    // "(SELECT DISTINCT(connection_id) FROM terminals_connections "
+    // "WHERE terminal_id IN (%2)) "
+    // "ORDER BY count DESC, id LIMIT %3").arg(setid).arg(valueStr).arg(max);
     DebugDialog::debug(QString("select frequent connect %1").arg(queryStr));
 
     QSqlQuery query(m_database);
@@ -415,6 +435,69 @@ QList<QMap<QString, QVariant> *> AutocompleteDBManager::selectConnectionsByModul
     }
     return mapList;
 }
+
+QList<QMap<QString, QVariant> *> AutocompleteDBManager::selectConnectionsBetweenModules(long mid1, long mid2, QList<QPair<QString, QString>> includePair) {
+
+    QList<QMap<QString, QVariant> *> mapList;
+
+    QString valueStr = "";
+    int ind = 1;
+    // foreach(StringPair s, includePair) {
+    //     if (ind != 1) {
+    //         valueStr += ",";
+    //     }
+    //     valueStr += QString("('%1', '%2')").arg(s.first).arg(s.second);
+    //     ind++;
+    // }
+    foreach(StringPair s, includePair) {
+        if (ind != 1) {
+            valueStr += " OR ";
+        }
+        valueStr += QString("terminal_id='%1' AND to_terminal_id='%2'").arg(s.first).arg(s.second);
+        ind++;
+    }
+
+    QString queryStr = QString("SELECT c.*, tc.* FROM terminals_connections tc "
+    "INNER JOIN connections c "
+    "ON c.id = tc.connection_id AND c.id IN "
+    "(SELECT DISTINCT(connection_id) FROM terminals_connections "
+    "WHERE %3) "
+    "WHERE c.module_id = %1 AND c.to_module_id = %2 "
+    "ORDER BY c.count DESC, c.id").arg(mid1).arg(mid2).arg(valueStr);
+
+    // queryStr = QString("SELECT DISTINCT(connection_id) FROM terminals_connections "
+    //  "WHERE (terminal_id, to_terminal_id) IN (VALUES%1)").arg(valueStr);
+
+    // (SELECT DISTINCT(tc.connection_id) FROM terminals_connections tc 
+    // JOIN (VALUES %3) AS x (terminal_id, to_terminal_id)
+    // ON  x.terminal_id = tc.terminal_id AND x.to_terminal_id = tc.to_terminal_id) ;
+
+    // select id1 + id2 as FullKey, *
+    // from players
+    // where FullKey in ('11','12','13')
+
+    DebugDialog::debug(QString("queryString : %1").arg(queryStr));
+
+    QSqlQuery query(m_database);
+    query.prepare(queryStr);
+    //query.bindValue(":values",valueStr);
+    if (query.exec()) {
+        while(query.next()) {
+            QMap<QString, QVariant> * map = new QMap<QString, QVariant>();
+            QSqlRecord record = query.record();
+            for (int i=0; i<record.count(); i++) {
+                map->insert(record.fieldName(i), record.value(i));
+                //DebugDialog::debug("result " + record.fieldName(i) + " " + record.value(i).toString());
+            }
+            mapList.append(map);
+        }
+
+    } else {
+        m_debugExec(QString("couldn't find connection of %1").arg(valueStr), query);
+    }
+    return mapList;
+}
+
 
 /*
 AutocompleteDBManager::selectNextSet(long setid) {

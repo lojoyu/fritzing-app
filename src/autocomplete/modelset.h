@@ -81,6 +81,7 @@ public:
     bool single(); 
     qint64 keyId();
     QString keyLabel();
+    QString keyTitle();
     void addSetConnection(QSharedPointer<SetConnection> s);
     void addBreadboardConnection(QSharedPointer<SetConnection> s);
     QSharedPointer<SetConnection> setConnection();
@@ -93,6 +94,8 @@ public:
     bool isMicrocontroller();
     QList<QPair<Terminal, QString>> getPinTypeTerminal(QString pintype);
     QString pinEqual(QString pintype1, QString pintype2);
+    QString getTerminalName(QString moduleID, QString connectorID);
+
 
 protected:
 	//static long m_nextid;

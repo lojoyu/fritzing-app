@@ -19,6 +19,8 @@ class AutocompleteDBManager {
 	    static QMap<QString, QVariant> * getConnectionByID(long id);
 		static QMap<QString, QVariant> * getModelSetByID(long id);
 		static QList<QMap<QString, QVariant> *> getConnectionsByModuleID(long mid, QList<long> mids);
+		static QList<QMap<QString, QVariant> *> getConnectionsBetweenModules(long mid1, long mid2, QList<QPair<QString, QString>> includePair);
+
 
 	protected:
         QList<QMap<QString, QVariant> *> selectModelSet(QString title);
@@ -29,6 +31,8 @@ class AutocompleteDBManager {
 		QList<QPair<long, long>> selectFrequentConnect(long setid, int max);
         QList<QPair<long, long>> selectFrequentConnect(long setid, int max, QList<QString> nameList);
 		QList<QMap<QString, QVariant> *> selectConnectionsByModuleID(long mid, QList<long> mids);
+		QList<QMap<QString, QVariant> *> selectConnectionsBetweenModules(long mid1, long mid2, QList<QPair<QString, QString>> includePair);
+
 
 		void deleteConnection();
 
