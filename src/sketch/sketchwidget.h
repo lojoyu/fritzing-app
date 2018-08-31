@@ -784,14 +784,23 @@ public:
     void setAutoComplete(bool);
 
     QList<QSharedPointer<ModelSet>> getSavedModelSets();
+    void selectModelSet(QSharedPointer<ModelSet>, bool transparent);
+    void selectSetToSet(QSharedPointer<ModelSet> modelSet, QSharedPointer<SetConnection> setconnection, bool transparent);
+    void deleteModelSet(QSharedPointer<ModelSet> modelSet);
+    void deleteSetConnection(QSharedPointer<SetConnection> setConnection);
+    void addToModelSet(QSharedPointer<ModelSet>, bool transparent);
+
+signals:
+    void clearRecommendListSignal();
 
 public slots:
-    void addModelSet(QSharedPointer<ModelSet>, bool transparent);
+    
     void addSetToSet(QSharedPointer<ModelSet> modelSet, QSharedPointer<SetConnection> setconnection, bool transparent);
     QSharedPointer<ModelSet> getMicrocontroller();
     void autocompleteInit();
 
 protected:
+	void addModelSet(QSharedPointer<ModelSet>, bool transparent);
     void addSetConnection(QSharedPointer<SetConnection> setconnection, bool transparent);
     ItemBase * addSetItem(QPointF pos, QString & toModuleID, bool transparent);
     ItemBase * addSetItem(ItemBase * fromItem, const QString & fromConnectorID, QString toModuleID, const QString & toConnectorID, bool transparent);
@@ -810,6 +819,9 @@ protected:
     //QString findBreadBoardUnused(QList<QString> connectorIDList, QList<QString> excludeConnectorIDList);
     void getSuggestionConnection(Wire * wire, ConnectorItem * to);
     ConnectorItem * findConnectorItemTo(ConnectorItem * connectorItem, ConnectorItem * excludeConnector);
+    AddModelSetCommand * newAddModelSetCommand(QSharedPointer<ModelSet>, QUndoCommand * parentCommand);
+    AddSetToSetCommand * newAddSetToSetCommand(QSharedPointer<ModelSet> modelSet, QSharedPointer<SetConnection> setConnection, QUndoCommand * parentCommand);
+    AddSetConnectionCommand * newAddSetConnectionCommand(QSharedPointer<SetConnection> setConnection, QUndoCommand * parentCommand);
 
 protected:
 	bool m_autoComplete;

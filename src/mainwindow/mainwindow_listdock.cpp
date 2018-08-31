@@ -26,10 +26,11 @@ void MainWindow::initRecommendList(SketchWidget * sketchWidget){
     AutoCompleter * autocompleter = AutoCompleter::getAutoCompleter();
 
     connect(autocompleter, SIGNAL(addModelSetSignal(QList<QSharedPointer<ModelSet>>)),
-                       this, SLOT(setmodelSetList(QList<QSharedPointer<ModelSet>>)));
+                       this, SLOT(setModelSetList(QList<QSharedPointer<ModelSet>>)));
     connect(autocompleter, SIGNAL(addSetConnectionSignal(QList<QSharedPointer<ModelSet>>, QList<QSharedPointer<SetConnection>>)),
                        this, SLOT(setTosetList(QList<QSharedPointer<ModelSet>>, QList<QSharedPointer<SetConnection>>))) ;
 
+    connect(autocompleter, SIGNAL(clearRecommendListSignal()), this, SLOT(clearList()));
 }
 
 //void MainWindow::CurrentRowItem(int i){
@@ -62,9 +63,9 @@ void MainWindow::onItemEvent(QListWidgetItem* listitem, bool hover) {
     QVariantList itemDataV = listitem->data(Qt::UserRole).toList();
     SuggestionType type = (SuggestionType)itemDataV[0].toInt();
     if (type == SuggestionType::toModelSet) {
-        m_sketchwidget->addModelSet(itemDataV[1].value<QSharedPointer<ModelSet>>(), hover);
+        m_sketchwidget->selectModelSet(itemDataV[1].value<QSharedPointer<ModelSet>>(), hover);
     } else {
-        m_sketchwidget->addSetToSet(itemDataV[1].value<QSharedPointer<ModelSet>>(), itemDataV[2].value<QSharedPointer<SetConnection>>(),  hover) ;
+        m_sketchwidget->selectSetToSet(itemDataV[1].value<QSharedPointer<ModelSet>>(), itemDataV[2].value<QSharedPointer<SetConnection>>(),  hover) ;
     }
 
 }
@@ -88,9 +89,9 @@ void MainWindow::setTosetList(QList<QSharedPointer<ModelSet>> toModelsetList, QL
     }
 }
 
-void MainWindow::setmodelSetList(QList<QSharedPointer<ModelSet>> modelSetList){
+void MainWindow::setModelSetList(QList<QSharedPointer<ModelSet>> modelSetList){
 
-    m_recommendlist->clear() ;
+    m_recommendlist->clear();
 
     for (int i = 0 ; i < modelSetList.length() ; i++) {
         QListWidgetItem* item = new QListWidgetItem(QString("%1 recommend").arg(i+1));
@@ -100,8 +101,13 @@ void MainWindow::setmodelSetList(QList<QSharedPointer<ModelSet>> modelSetList){
         item->setData(Qt::UserRole, itemData);
         m_recommendlist->insertItem(i ,item) ;
     }
-    m_sketchwidget->addModelSet(modelSetList[0], true);
+    m_sketchwidget->selectModelSet(modelSetList[0], true);
 
+}
+
+void MainWindow::clearList() {
+    //qDeleteAll(m_recommendlist->);
+    m_recommendlist->clear();
 }
 
 //void MainWindow::addRecommendList(QList<QSharedPointer<ModelSet>> toModelsetList, QList<QSharedPointer<SetConnection>> setConnectionList){

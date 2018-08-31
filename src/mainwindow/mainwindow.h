@@ -1002,8 +1002,8 @@ public slots:
     //void addRecommendList(QList<QSharedPointer<ModelSet>>, QList<QSharedPointer<SetConnection>>);
     //void addmodelSetList(QList<QSharedPointer<ModelSet>>);
     void setTosetList(QList<QSharedPointer<ModelSet>> toModelsetList, QList<QSharedPointer<SetConnection>> setConnectionList);
-    void setmodelSetList(QList<QSharedPointer<ModelSet>> modelSetList);
-
+    void setModelSetList(QList<QSharedPointer<ModelSet>> modelSetList);
+    void clearList();
 
 protected:
 

@@ -32,6 +32,7 @@ $Date: 2013-04-05 10:22:00 +0200 (Fr, 05. Apr 2013) $
 #include "connectors/connectoritem.h"
 #include "items/moduleidnames.h"
 #include "utils/bezier.h"
+#include "autocomplete/autocompleter.h"
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -2254,3 +2255,79 @@ void TemporaryCommand::setEnabled(bool enabled) {
      }
 }
 
+/////////////////////////////////////////////
+
+AddModelSetCommand::AddModelSetCommand(SketchWidget *sketchWidget, QSharedPointer<ModelSet> modelSet, QUndoCommand *parent)
+    : BaseCommand(BaseCommand::CrossView, sketchWidget, parent){
+	m_modelSet = modelSet;
+}
+    
+void AddModelSetCommand::undo() {
+	m_sketchWidget->deleteModelSet(m_modelSet);
+    //AutoCompleter::getSuggestionNext(m_modelSet, m_sketchWidget);
+	BaseCommand::undo();
+}
+
+void AddModelSetCommand::redo() {
+	m_sketchWidget->addToModelSet(m_modelSet, false);
+	BaseCommand::redo();
+}
+
+QString AddModelSetCommand::getParamString() const {
+	QString title = "";
+	return QString("AddModelSetCommand ") 
+		+ BaseCommand::getParamString() + 
+		QString(" modelSet title:%1")
+		.arg(m_modelSet->keyTitle());
+		;
+}
+
+
+/////////////////////////////////////////////
+
+AddSetToSetCommand::AddSetToSetCommand(SketchWidget *sketchWidget, QSharedPointer<ModelSet> modelSet, QSharedPointer<SetConnection> setConnection, QUndoCommand *parent)
+    : BaseCommand(BaseCommand::CrossView, sketchWidget, parent){
+	m_modelSet = modelSet;
+	m_setConnection = setConnection;
+}
+    
+void AddSetToSetCommand::undo() {
+	m_sketchWidget->deleteModelSet(m_modelSet);
+}
+
+void AddSetToSetCommand::redo() {
+    m_sketchWidget->addSetToSet(m_modelSet, m_setConnection, false);
+}
+
+QString AddSetToSetCommand::getParamString() const {
+	QString title = "";
+	return QString("AddSetToSetCommand ") 
+		+ BaseCommand::getParamString() + 
+		QString(" modelSet title:%1")
+		.arg(m_modelSet->keyTitle());		;
+}
+
+/////////////////////////////////////////////
+
+AddSetConnectionCommand::AddSetConnectionCommand(SketchWidget *sketchWidget, QSharedPointer<SetConnection> setConnection, QUndoCommand *parent)
+    : BaseCommand(BaseCommand::CrossView, sketchWidget, parent){
+	m_setConnection = setConnection;
+}
+    
+void AddSetConnectionCommand::undo() {
+	m_sketchWidget->deleteSetConnection(m_setConnection);
+}
+
+void AddSetConnectionCommand::redo() {
+    m_sketchWidget->addSetToSet(m_setConnection->getToModelSet(), m_setConnection, false);
+}
+
+QString AddSetConnectionCommand::getParamString() const {
+	QString title = "";
+	return QString("AddSetConnectionCommand ") 
+		+ BaseCommand::getParamString() + 
+		QString(" between %1 and %2")
+        .arg(m_setConnection->getFromModelSet()->keyTitle())
+        .arg(m_setConnection->getToModelSet()->keyTitle())
+		;
+}

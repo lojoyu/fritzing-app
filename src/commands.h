@@ -36,6 +36,7 @@ $Date: 2013-04-05 10:22:00 +0200 (Fr, 05. Apr 2013) $
 #include "routingstatus.h"
 #include "utils/misc.h"
 #include "items/itembase.h"
+#include "autocomplete/modelset.h"
 
 /////////////////////////////////////////////
 
@@ -1174,6 +1175,55 @@ protected:
     int m_columns;
     QList<long> m_ids;
     bool m_firstTime;
+};
+
+/////////////////////////////////////////////
+
+class AddModelSetCommand : public BaseCommand
+{
+public:
+    AddModelSetCommand(class SketchWidget *sketchWidget, QSharedPointer<ModelSet> modelSet, QUndoCommand *parent);
+    void undo();
+    void redo();
+
+protected:
+	QString getParamString() const;
+
+protected:
+    QSharedPointer<ModelSet> m_modelSet;
+};
+
+/////////////////////////////////////////////
+
+class AddSetToSetCommand : public BaseCommand
+{
+public:
+    AddSetToSetCommand(class SketchWidget *sketchWidget, QSharedPointer<ModelSet> modelSet, QSharedPointer<SetConnection> setConnection, QUndoCommand *parent);
+    void undo();
+    void redo();
+
+protected:
+	QString getParamString() const;
+
+protected:
+    QSharedPointer<ModelSet> m_modelSet;
+    QSharedPointer<SetConnection> m_setConnection;
+};
+
+/////////////////////////////////////////////
+
+class AddSetConnectionCommand : public BaseCommand
+{
+public:
+    AddSetConnectionCommand(class SketchWidget *sketchWidget, QSharedPointer<SetConnection> setConnection, QUndoCommand *parent);
+    void undo();
+    void redo();
+
+protected:
+	QString getParamString() const;
+
+protected:
+    QSharedPointer<SetConnection> m_setConnection;
 };
 
 /////////////////////////////////////////////

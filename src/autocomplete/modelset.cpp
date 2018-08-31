@@ -74,6 +74,7 @@ QList<ModelSet::TerminalPair> ModelSet::getConnections() {
 
 ItemBase * ModelSet::getItem(QString label) {
     if (m_labelHash.contains(label)) return m_labelHash[label];
+    if (label == m_keyLabel) return m_keyItem;
     return NULL;
 }
 
@@ -91,8 +92,15 @@ long ModelSet::setId() {
 
 
 void ModelSet::setKeyItem(ItemBase * item) {
-    insertLabelHash(m_keyLabel, item);
+
+    if (item == NULL) {
+        m_keyid = -1;
+        m_keyLabel = "";
+        m_keyItem = NULL;
+        return;
+    }
     m_keyItem = item;
+    insertLabelHash(m_keyLabel, item);
     m_keyid = item->id();
 }
 
@@ -102,6 +110,10 @@ void ModelSet::setKeyId(long id) {
 
 void ModelSet::setKeyLabel(QString label) {
     m_keyLabel = label;
+}
+
+void ModelSet::setKeyTitle(QString title) {
+    m_keyTitle = title;
 }
 
 void ModelSet::emptyItemList() {
@@ -131,6 +143,7 @@ QPair<ItemBase *, QString> ModelSet::getItemAndCID(QString terminalName) {
     //Terminal t = m_terminalnameHash[terminalName];
     QString key = genLabelHashKey(t);
     if (!m_labelHash.contains(key)) {
+        if (key == m_keyLabel) return QPair<ItemBase *, QString>(m_keyItem, t.connectorID);
         return QPair<ItemBase *, QString>(NULL, "");
     }
     ItemBase * item = m_labelHash[key];
@@ -224,7 +237,11 @@ bool ModelSet::isConfirm() {
 }
 
 void ModelSet::setConfirm() {
-    m_confirm = true;
+    setConfirm(true);
+}
+
+void ModelSet::setConfirm(bool confirm) {
+    m_confirm = confirm;
 }
 
 QList<QString> ModelSet::getConnectedTerminal() {
@@ -261,6 +278,13 @@ QString ModelSet::getTerminalName(QString moduleID, QString connectorID) {
     return "";
 }
 
+
+void ModelSet::deleteSetConnection(QSharedPointer<SetConnection> setConnection) {
+    if (m_breadboardConnection == setConnection) m_breadboardConnection.clear();
+    if (m_setConnection == setConnection) m_setConnection.clear();
+    if (m_fromSetConnectionList.contains(setConnection)) m_fromSetConnectionList.removeOne(setConnection);
+    if (m_toSetConnectionList.contains(setConnection)) m_toSetConnectionList.removeOne(setConnection);
+}
 
 ///////
 
@@ -327,7 +351,11 @@ bool SetConnection::isConfirm() {
 }
 
 void SetConnection::setConfirm() {
-    m_confirm = true;
+    setConfirm(true);
+}
+
+void SetConnection::setConfirm(bool confirm) {
+    m_confirm = confirm;
 }
 
 QList<QString> SetConnection::getConnectedTerminal(int ind) {

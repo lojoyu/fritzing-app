@@ -71,6 +71,7 @@ public:
     void setKeyItem(ItemBase * item);
 	void setKeyLabel(QString label);
     void setKeyId(long id);
+    void setKeyTitle(QString title);
 	void emptyItemList();
 	long setId();
 	QPair<ItemBase *, QString> getItemAndCID2(long terminalId);
@@ -89,12 +90,14 @@ public:
     void clearSetConnection();
     bool isConfirm();
     void setConfirm();
+    void setConfirm(bool confirm);
     QList<QString> getConnectedTerminal();
     void appendSetConnectionList(int ind, QSharedPointer<SetConnection> setConnection);
     bool isMicrocontroller();
     QList<QPair<Terminal, QString>> getPinTypeTerminal(QString pintype);
     QString pinEqual(QString pintype1, QString pintype2);
     QString getTerminalName(QString moduleID, QString connectorID);
+    void deleteSetConnection(QSharedPointer<SetConnection> setConnection);
 
 
 protected:
@@ -155,6 +158,7 @@ public:
 	QList<Connection> getConnectionList();
 	bool isConfirm();
     void setConfirm();
+    void setConfirm(bool confirm);
     QList<QString> getConnectedTerminal(int ind);
 
 protected:

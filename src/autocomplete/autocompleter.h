@@ -27,10 +27,12 @@ public:
 	static void test();
     static void getSuggestionConnection(QSharedPointer<ModelSet> fromModelset, ConnectorItem * fromConnectorItem, 
                 QSharedPointer<ModelSet> toModelSet, ConnectorItem * toConnectorItem, SketchWidget * sketchWidget);
+    static void clearRecommend();
 
 signals:
     void addModelSetSignal(QList<QSharedPointer<ModelSet>>);
     void addSetConnectionSignal(QList<QSharedPointer<ModelSet>>, QList<QSharedPointer<SetConnection>> setConnectionList);
+    void clearRecommendListSignal();
 
 protected:
     void getSuggestionSetSelf(ItemBase * item, SketchWidget * sketchWidget);
@@ -46,7 +48,7 @@ protected:
         QList<QMap<QString, QVariant> *> & connectionList, QList<QSharedPointer<SetConnection>> & setConnectionList, bool inorder);
     void expandModelSetList(QList<long> moduleList, QList<QSharedPointer<ModelSet>> & toModelsetList);
     //void addModelSet(QSharedPointer<ModelSet>);
-    
+    void clearRecommendSelf();
 
 
 protected:

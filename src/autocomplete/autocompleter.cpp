@@ -96,6 +96,17 @@ void AutoCompleter::getSuggestionConnection(QSharedPointer<ModelSet> fromModelse
 
 }
 
+void AutoCompleter::clearRecommend() {
+    if (singleton == NULL) {
+        singleton = new AutoCompleter();
+    }
+    singleton->clearRecommendSelf();
+}
+
+void AutoCompleter::clearRecommendSelf() {
+    emit clearRecommendListSignal();
+}
+
 
 void AutoCompleter::getSuggestionSetSelf(ItemBase * item, SketchWidget * sketchWidget) {
 
@@ -107,7 +118,7 @@ void AutoCompleter::getSuggestionSetSelf(ItemBase * item, SketchWidget * sketchW
     resultList.clear();
     if (modelSetList.length() > 0) {
         if (modelSetList.length() == 1 && modelSetList[0]->single()){
-            sketchWidget->addModelSet(modelSetList[0], false);
+            sketchWidget->selectModelSet(modelSetList[0], true);
             //emit addModelSetSignal(modelSetList);
             //modelSetList[0]->setKeyItem(item);
             //sketchWidget->completeVoltage(modelSetList[0]);
@@ -156,6 +167,7 @@ void AutoCompleter::mapListToModelSet(ItemBase * keyItem, SketchWidget * sketchW
         modelSet->insertTerminalnameHash(map["name"].toString(), t1);
         modelSet->insertTerminalType(map["name"].toString(), map["type"].toString());
         if (title1 == title) {
+            modelSet->setKeyTitle(title);
             modelSet->setKeyLabel(map["component_label"].toString());
             //modelSet->setKeyItem(keyItem);
             if (keyItem != NULL) modelSet->setKeyId(keyItem->id());
