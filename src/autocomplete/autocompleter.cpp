@@ -110,29 +110,33 @@ void AutoCompleter::clearRecommendSelf() {
 
 void AutoCompleter::getSuggestionSetSelf(ItemBase * item, SketchWidget * sketchWidget) {
 
-    QString title = item->title();
-    QList<QMap<QString, QVariant> *> resultList = AutocompleteDBManager::getModelSet(title);
+    QString moduleID = item->moduleID();
+    QList<QMap<QString, QVariant> *> resultList = AutocompleteDBManager::getModelSet(moduleID);
     QList<QSharedPointer<ModelSet>> modelSetList;
     mapListToModelSet(item, sketchWidget, resultList, modelSetList);
     qDeleteAll(resultList);
     resultList.clear();
     if (modelSetList.length() > 0) {
-        if (modelSetList.length() == 1 && modelSetList[0]->single()){
-            sketchWidget->selectModelSet(modelSetList[0], true);
-            //emit addModelSetSignal(modelSetList);
-            //modelSetList[0]->setKeyItem(item);
-            //sketchWidget->completeVoltage(modelSetList[0]);
-            //completeVoltage(modelSetList[0]);
-            //getSuggestionNextSelf(modelSetList[0], sketchWidget);
-        } else {
-            emit addModelSetSignal(modelSetList);
-            //sketchWidget->addModelSet(modelSetList[0], true);
-        }
+        emit addModelSetSignal(modelSetList);
+        // if (modelSetList.length() == 1 && modelSetList[0]->single()){
+        //     sketchWidget->selectModelSet(modelSetList[0], true);
+        //     //emit addModelSetSignal(modelSetList);
+        //     //modelSetList[0]->setKeyItem(item);
+        //     //sketchWidget->completeVoltage(modelSetList[0]);
+        //     //completeVoltage(modelSetList[0]);
+        //     //getSuggestionNextSelf(modelSetList[0], sketchWidget);
+        // } else {
+        //     emit addModelSetSignal(modelSetList);
+        //     //sketchWidget->addModelSet(modelSetList[0], true);
+        // }
+    } else {
+        clearRecommendSelf();
     }
 }
 
 void AutoCompleter::mapListToModelSet(ItemBase * keyItem, SketchWidget * sketchWidget, QList<QMap<QString, QVariant> *> & resultList, QList<QSharedPointer<ModelSet>> & modelSetList) {
-    QString title = keyItem == NULL ? "" : keyItem->title();
+   // QString title = keyItem == NULL ? "" : keyItem->title();
+    QString moduleID = keyItem == NULL ? "" : keyItem->moduleID();
     long setid = -1;
     QSharedPointer<ModelSet> modelSet;
     for (int i=0; i<resultList.length(); i++) {
@@ -140,14 +144,14 @@ void AutoCompleter::mapListToModelSet(ItemBase * keyItem, SketchWidget * sketchW
         long nowid = map["module_id"].toLongLong();
         if (setid == -1 || setid != nowid) {
             if (keyItem == NULL) {
-                title = map["title"].toString();
+                moduleID = map["module_fid"].toString();
             }
             setid = nowid;
-            modelSet = QSharedPointer<ModelSet>(new ModelSet(nowid, title));
+            modelSet = QSharedPointer<ModelSet>(new ModelSet(nowid, moduleID));
             // if there is microcontroller on the breadboard, use that one
             if (modelSet->isMicrocontroller()) {
                 QSharedPointer<ModelSet> ms = sketchWidget->getMicrocontroller();
-                if (!ms.isNull() && modelSet->keyTitle() == ms->keyTitle()) modelSet = ms;
+                if (!ms.isNull() && modelSet->keyModuleID() == ms->keyModuleID()) modelSet = ms;
             }
             modelSetList.append(modelSet);
             modelSet->setSingle(true);
@@ -157,8 +161,8 @@ void AutoCompleter::mapListToModelSet(ItemBase * keyItem, SketchWidget * sketchW
         QString title2 = map["to_component_title"].toString();
         
         //TODO: change to moduleid -> categorize!
-        QString m1 = getModuleIDByTitle(title1, sketchWidget);
-        QString m2 = getModuleIDByTitle(title2, sketchWidget);
+        QString m1 = map["component_module_fid"].toString();
+        QString m2 = map["to_component_module_fid"].toString();
 
         ModelSet::Terminal t1 = ModelSet::Terminal(m1, title1, map["component_label"].toString(), map["component_terminal"].toString(), map["type"].toString());
         ModelSet::Terminal t2 = ModelSet::Terminal(m2, title2, map["to_component_label"].toString(), map["to_component_terminal"].toString(), map["type"].toString());
@@ -166,14 +170,15 @@ void AutoCompleter::mapListToModelSet(ItemBase * keyItem, SketchWidget * sketchW
         modelSet->insertTerminalHash(map["id"].toLongLong(), t1);
         modelSet->insertTerminalnameHash(map["name"].toString(), t1);
         modelSet->insertTerminalType(map["name"].toString(), map["type"].toString());
-        if (title1 == title) {
-            modelSet->setKeyTitle(title);
+        if (m1 == moduleID) {
+            modelSet->setKeyModuleID(moduleID);
+            modelSet->setKeyTitle(title1);
             modelSet->setKeyLabel(map["component_label"].toString());
             //modelSet->setKeyItem(keyItem);
             if (keyItem != NULL) modelSet->setKeyId(keyItem->id());
             //keyItem->setModelSet(modelSet);
         }
-        if (title2 != "NULL") modelSet->setSingle(false);
+        if (m2 != "NULL") modelSet->setSingle(false);
     }
 }
 

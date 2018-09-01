@@ -57,7 +57,7 @@ public:
 
 public:
 	ModelSet();
-	ModelSet(long setid, QString title);
+	ModelSet(long setid, QString moduleID);
     ~ModelSet();
 	void appendConnection(Terminal t1, Terminal t2);
     void insertLabelHash(QString label, ItemBase * item);
@@ -72,6 +72,7 @@ public:
 	void setKeyLabel(QString label);
     void setKeyId(long id);
     void setKeyTitle(QString title);
+    void setKeyModuleID(QString moduleID);
 	void emptyItemList();
 	long setId();
 	QPair<ItemBase *, QString> getItemAndCID2(long terminalId);
@@ -83,6 +84,7 @@ public:
     qint64 keyId();
     QString keyLabel();
     QString keyTitle();
+    QString keyModuleID();
     void addSetConnection(QSharedPointer<SetConnection> s);
     void addBreadboardConnection(QSharedPointer<SetConnection> s);
     QSharedPointer<SetConnection> setConnection();
@@ -107,6 +109,7 @@ protected:
     QString m_keyTitle; //keyTitle
 	QString m_keyLabel;
 	qint64 m_keyid;
+	QString m_keyModuleID;
 	long m_setid; //from db
 	QList<TerminalPair> m_connections;
     QList<ItemBase *> m_itemList;

@@ -15,17 +15,19 @@ ModelSet::ModelSet() {
     m_keyTitle = "";
     m_setid = -1;
     m_single = true;
+    m_keyModuleID = "";
 
 }
 
-ModelSet::ModelSet(long setid, QString title) {
+ModelSet::ModelSet(long setid, QString moduleID) {
     m_setid = setid;
-    m_keyTitle = title;
+    m_keyTitle = "";
     m_keyItem = NULL;
     m_keyid = -1;
     m_keyLabel = "";
     m_single = true;
     m_confirm = false;
+    m_keyModuleID = moduleID;
 }
 
 ModelSet::~ModelSet() {
@@ -116,6 +118,10 @@ void ModelSet::setKeyTitle(QString title) {
     m_keyTitle = title;
 }
 
+void ModelSet::setKeyModuleID(QString moduleID) {
+    m_keyModuleID = moduleID;
+}
+
 void ModelSet::emptyItemList() {
     m_itemList.clear();
     m_labelHash.clear();
@@ -202,6 +208,10 @@ QString ModelSet::keyLabel() {
 
 QString ModelSet::keyTitle() {
     return m_keyTitle;
+}
+
+QString ModelSet::keyModuleID() {
+    return m_keyModuleID;
 }
 
 void ModelSet::setSingle(bool b) {

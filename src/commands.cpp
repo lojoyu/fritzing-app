@@ -2293,10 +2293,12 @@ AddSetToSetCommand::AddSetToSetCommand(SketchWidget *sketchWidget, QSharedPointe
     
 void AddSetToSetCommand::undo() {
 	m_sketchWidget->deleteModelSet(m_modelSet);
+    BaseCommand::undo();
 }
 
 void AddSetToSetCommand::redo() {
     m_sketchWidget->addSetToSet(m_modelSet, m_setConnection, false);
+    BaseCommand::redo();
 }
 
 QString AddSetToSetCommand::getParamString() const {
@@ -2316,10 +2318,12 @@ AddSetConnectionCommand::AddSetConnectionCommand(SketchWidget *sketchWidget, QSh
     
 void AddSetConnectionCommand::undo() {
 	m_sketchWidget->deleteSetConnection(m_setConnection);
+    BaseCommand::undo();
 }
 
 void AddSetConnectionCommand::redo() {
     m_sketchWidget->addSetToSet(m_setConnection->getToModelSet(), m_setConnection, false);
+    BaseCommand::redo();
 }
 
 QString AddSetConnectionCommand::getParamString() const {

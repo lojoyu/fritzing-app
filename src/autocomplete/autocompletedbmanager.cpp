@@ -84,11 +84,11 @@ void AutocompleteDBManager::loadDB(const QString & databasename) {
 	}
 }
 
-QList<QMap<QString, QVariant> *> AutocompleteDBManager::getModelSet(QString title) {
+QList<QMap<QString, QVariant> *> AutocompleteDBManager::getModelSet(QString moduleID) {
 	if (singleton == NULL) {
         singleton = new AutocompleteDBManager(defaultname);
 	}
-	return singleton->selectModelSet(title);
+	return singleton->selectModelSet(moduleID);
 	
 }
 
@@ -157,24 +157,25 @@ AutocompleteDBManager::getNextSet(QString title) {
 	return singleton->selectNextSet(title);
 }*/
 
-QList<QMap<QString, QVariant> *> AutocompleteDBManager::selectModelSet(QString title) {
-	
+
+QList<QMap<QString, QVariant> *> AutocompleteDBManager::selectModelSet(QString moduleID) {
+    
     QList<QMap<QString, QVariant> *> resultList;
     QString queryStr = QString("SELECT mc.* FROM %1 mc "
     "INNER JOIN %2 m "
     "ON mc.%3=m.id "
     "INNER JOIN %4 c "
     "on m.%5=c.id "
-    "WHERE c.%6 = '%8' \n"
-    "ORDER BY m.%7 DESC, m.id, mc.id").arg(modulescomponents["TABLE"]).arg(modules["TABLE"])
+    "WHERE c.module_fid = '%7' \n"
+    "ORDER BY m.%6 DESC, m.id, mc.id").arg(modulescomponents["TABLE"]).arg(modules["TABLE"])
             .arg(modulescomponents["MODULE_ID"]).arg(components["TABLE"])
-            .arg(modules["COMPONENT_ID"]).arg(components["TITLE"])
-            .arg(modules["COUNT"]).arg(title);
+            .arg(modules["COMPONENT_ID"])
+            .arg(modules["COUNT"]).arg(moduleID);
     QSqlQuery query(m_database);
     query.prepare(queryStr);
     //query.bindValue(0,title);
     if (query.exec()) {
-		while(query.next()) {
+        while(query.next()) {
             QSqlRecord record = query.record();
             QMap<QString, QVariant> * map = new QMap<QString, QVariant>();
             for (int i=0; i<record.count(); i++) {
@@ -182,13 +183,46 @@ QList<QMap<QString, QVariant> *> AutocompleteDBManager::selectModelSet(QString t
                 //DebugDialog::debug("result " + record.fieldName(i) + " " + record.value(i).toString());
             }
             resultList.append(map);
-		}
+        }
 
-	} else {
-		m_debugExec(QString("couldn't find model set of %1").arg(title), query);
-	}
+    } else {
+        m_debugExec(QString("couldn't find model set of %1").arg(moduleID), query);
+    }
     return resultList;
 }
+
+// QList<QMap<QString, QVariant> *> AutocompleteDBManager::selectModelSet(QString title) {
+	
+//     QList<QMap<QString, QVariant> *> resultList;
+//     QString queryStr = QString("SELECT mc.* FROM %1 mc "
+//     "INNER JOIN %2 m "
+//     "ON mc.%3=m.id "
+//     "INNER JOIN %4 c "
+//     "on m.%5=c.id "
+//     "WHERE c.%6 = '%8' \n"
+//     "ORDER BY m.%7 DESC, m.id, mc.id").arg(modulescomponents["TABLE"]).arg(modules["TABLE"])
+//             .arg(modulescomponents["MODULE_ID"]).arg(components["TABLE"])
+//             .arg(modules["COMPONENT_ID"]).arg(components["TITLE"])
+//             .arg(modules["COUNT"]).arg(title);
+//     QSqlQuery query(m_database);
+//     query.prepare(queryStr);
+//     //query.bindValue(0,title);
+//     if (query.exec()) {
+// 		while(query.next()) {
+//             QSqlRecord record = query.record();
+//             QMap<QString, QVariant> * map = new QMap<QString, QVariant>();
+//             for (int i=0; i<record.count(); i++) {
+//                 map->insert(record.fieldName(i), record.value(i));
+//                 //DebugDialog::debug("result " + record.fieldName(i) + " " + record.value(i).toString());
+//             }
+//             resultList.append(map);
+// 		}
+
+// 	} else {
+// 		m_debugExec(QString("couldn't find model set of %1").arg(title), query);
+// 	}
+//     return resultList;
+// }
 
 QList<QPair<long, long>> AutocompleteDBManager::selectFrequentConnect(long setid, int max) {
 	QList<QPair<long, long>> toList;
@@ -348,7 +382,7 @@ QList<QMap<QString, QVariant> *> AutocompleteDBManager::selectModelSetsByID(QLis
 //    "WHERE module_id IN (%1) "
 //    "ORDER BY %2").arg(valueStr).arg(orderStr);
 
-    QString queryStr = QString("SELECT c.title, mc.* FROM modules_components mc "
+    QString queryStr = QString("SELECT c.module_fid, mc.* FROM modules_components mc "
     "INNER JOIN modules m ON m.id=mc.module_id "
     "INNER JOIN components c ON c.id=m.component_id "
     "WHERE mc.module_id IN (%1) "
