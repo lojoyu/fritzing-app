@@ -468,6 +468,7 @@ ItemBase * SketchWidget::addSetItem(ItemBase * fromItem, const QString & fromCon
 
 void SketchWidget::getSuggestionConnection(Wire *wire, ConnectorItem * to) {
     if (!m_autoComplete) return;
+    if (to == NULL) return;
 
     ConnectorItem * toConnectorItem = NULL;
     if (to->attachedTo() != m_breadBoardModelSet->keyItem()) {
@@ -679,13 +680,19 @@ void SketchWidget::completeSuggestion(QSharedPointer<ModelSet> modelset, bool tr
 void SketchWidget::checkMousePressSuggestion(QGraphicsItem * item) {
 
     if (!m_prevModelSet.isNull()) findKeyItem(m_prevModelSet);
-
+    bool isModelSet = false;
     ItemBase * itemBase = dynamic_cast<ItemBase *>(item);
     if (itemBase) {
         QSharedPointer<ModelSet> modelset = itemBase->modelSet();
         if (!modelset.isNull()) {
             m_pressModelSet = modelset;
+            isModelSet = true;
         }
+    }
+
+    if (!isModelSet) {
+        removePrevModelSet();
+        //AutoCompleter::clearRecommend();
     }
 }
 
