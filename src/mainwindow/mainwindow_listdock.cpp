@@ -90,10 +90,10 @@ void MainWindow::setTosetList(QList<QSharedPointer<ModelSet>> toModelsetList, QL
         itemData.append(QVariant::fromValue(toModelsetList[i]));
         itemData.append(QVariant::fromValue(setConnectionList[i]));
         ModelPart * modelPart = m_referenceModel->retrieveModelPart(toModelsetList[i]->keyModuleID());
-        loadImage(modelPart,item);
+        loadImage(modelPart, item);
         item->setData(Qt::UserRole, itemData);
         item->setSizeHint(QSize(50,60));
-        m_recommendlist->insertItem(i ,item) ;
+        m_recommendlist->insertItem(i, item) ;
 
         QLabel * label = new QLabel();
         label->setAlignment(Qt::AlignCenter);
@@ -119,14 +119,11 @@ void MainWindow::setModelSetList(QList<QSharedPointer<ModelSet>> modelSetList){
         item->setSizeHint(QSize(50,60));
         m_recommendlist->insertItem(i ,item) ;
 
-
         QLabel * label = new QLabel();
         label->setAlignment(Qt::AlignCenter);
         label->setText("<a href=\"https://github.com/lojoyu/fritzing-app\">github");
         label->setOpenExternalLinks(true);
         m_recommendlist->setItemWidget(m_recommendlist->item(i),label);
-
-
     }
     m_sketchwidget->selectModelSet(modelSetList[0], true);
 
