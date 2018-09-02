@@ -785,7 +785,7 @@ public:
 
     QList<QSharedPointer<ModelSet>> getSavedModelSets();
     void selectModelSet(QSharedPointer<ModelSet>, bool transparent);
-    void selectSetToSet(QSharedPointer<ModelSet> modelSet, QSharedPointer<SetConnection> setconnection, bool transparent);
+    void selectSetToSet(QSharedPointer<ModelSet> modelSet, QSharedPointer<SetConnection> setconnection, bool confirmSetConnection, bool transparent);
     void deleteModelSet(QSharedPointer<ModelSet> modelSet);
     void deleteSetConnection(QSharedPointer<SetConnection> setConnection);
     void addToModelSet(QSharedPointer<ModelSet>, bool transparent);
@@ -795,7 +795,7 @@ signals:
 
 public slots:
     
-    void addSetToSet(QSharedPointer<ModelSet> modelSet, QSharedPointer<SetConnection> setconnection, bool transparent);
+    void addSetToSet(QSharedPointer<ModelSet> modelSet, QSharedPointer<SetConnection> setconnection, bool confirmSetConnection, bool transparent);
     QSharedPointer<ModelSet> getMicrocontroller();
     void autocompleteInit();
 
@@ -820,7 +820,7 @@ protected:
     void getSuggestionConnection(Wire * wire, ConnectorItem * to);
     ConnectorItem * findConnectorItemTo(ConnectorItem * connectorItem, ConnectorItem * excludeConnector);
     AddModelSetCommand * newAddModelSetCommand(QSharedPointer<ModelSet>, QUndoCommand * parentCommand);
-    AddSetToSetCommand * newAddSetToSetCommand(QSharedPointer<ModelSet> modelSet, QSharedPointer<SetConnection> setConnection, QUndoCommand * parentCommand);
+    AddSetToSetCommand * newAddSetToSetCommand(QSharedPointer<ModelSet> modelSet, QSharedPointer<SetConnection> setConnection, bool confirmSetConnection, QUndoCommand * parentCommand);
     AddSetConnectionCommand * newAddSetConnectionCommand(QSharedPointer<SetConnection> setConnection, QUndoCommand * parentCommand);
 
 protected:

@@ -87,7 +87,7 @@ void AutoCompleter::getSuggestionExist(QSharedPointer<ModelSet> modelset, Sketch
     singleton->getSuggestionExistSelf(modelset, sketchWidget);
 }
 
-void AutoCompleter::getSuggestionConnection(QSharedPointer<ModelSet> fromModelset, ConnectorItem * fromConnectorItem, 
+void AutoCompleter::getSuggestionConnection(QSharedPointer<ModelSet> fromModelset, ConnectorItem * fromConnectorItem,
     QSharedPointer<ModelSet> toModelSet, ConnectorItem * toConnectorItem, SketchWidget * sketchWidget) {
     if (singleton == NULL) {
         singleton = new AutoCompleter();
@@ -284,16 +284,18 @@ void AutoCompleter::getSuggestionExistSelf(QSharedPointer<ModelSet> modelset, Sk
 
 } 
 
-void AutoCompleter::getSuggestionConnectionSelf(QSharedPointer<ModelSet> fromModelset, ConnectorItem * fromConnectorItem, 
+void AutoCompleter::getSuggestionConnectionSelf(QSharedPointer<ModelSet> fromModelset, ConnectorItem * fromConnectorItem,
         QSharedPointer<ModelSet> toModelset, ConnectorItem * toConnectorItem, SketchWidget * sketchWidget) {
 
     QList<QPair<QString, QString>> stringpair;
-    QString fromConnectorID = fromConnectorItem->connectorSharedID();
-    QString toConnectorID = toConnectorItem->connectorSharedID();
-    QString fromName = fromModelset->getTerminalName(fromModelset->keyItem()->moduleID(), fromConnectorID);
-    QString toName = toModelset->getTerminalName(toModelset->keyItem()->moduleID(), toConnectorID);
+    if (fromConnectorItem != NULL && toConnectorItem != NULL) {
+        QString fromConnectorID = fromConnectorItem->connectorSharedID();
+        QString toConnectorID = toConnectorItem->connectorSharedID();
+        QString fromName = fromModelset->getTerminalName(fromModelset->keyItem()->moduleID(), fromConnectorID);
+        QString toName = toModelset->getTerminalName(toModelset->keyItem()->moduleID(), toConnectorID);
 
-    stringpair.append(QPair<QString, QString>(fromName, toName));
+        stringpair.append(QPair<QString, QString>(fromName, toName));
+    }
 
     QList<QMap<QString, QVariant> *> connectionList = AutocompleteDBManager::getConnectionsBetweenModules(fromModelset->setId(), toModelset->setId(), stringpair);
     QList<QSharedPointer<SetConnection>> setConnectionList;
@@ -304,7 +306,7 @@ void AutoCompleter::getSuggestionConnectionSelf(QSharedPointer<ModelSet> fromMod
     qDeleteAll(connectionList);
     connectionList.clear();
     if (setConnectionList.length() > 0) {
-        sketchWidget->addSetToSet(toModelset, setConnectionList[0], true);
+        sketchWidget->addSetToSet(toModelset, setConnectionList[0], false, true);
         emit addSetConnectionSignal(existModelset, setConnectionList);
     }
 

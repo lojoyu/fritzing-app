@@ -69,7 +69,7 @@ void MainWindow::onItemEvent(QListWidgetItem* listitem, bool hover) {
     if (type == SuggestionType::toModelSet) {
         m_sketchwidget->selectModelSet(itemDataV[1].value<QSharedPointer<ModelSet>>(), hover);
     } else {
-        m_sketchwidget->selectSetToSet(itemDataV[1].value<QSharedPointer<ModelSet>>(), itemDataV[2].value<QSharedPointer<SetConnection>>(),  hover) ;
+        m_sketchwidget->selectSetToSet(itemDataV[1].value<QSharedPointer<ModelSet>>(), itemDataV[2].value<QSharedPointer<SetConnection>>(), false, hover) ;
     }
 
 }

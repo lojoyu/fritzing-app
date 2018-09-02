@@ -2,7 +2,7 @@
 
 #include "../debugdialog.h"
 
-const QList<QString> MICROCONTROLLER({"Arduino Uno (Rev3)"});
+const QList<QString> MICROCONTROLLER({"arduino_Uno_Rev3(fix)"});
 
 
 typedef QPair<QString, QString> PairString;
@@ -37,6 +37,7 @@ ModelSet::~ModelSet() {
     m_terminalHash.clear();
     m_terminalnameHash.clear();
     m_itemList.clear();
+    m_wireConnection.clear();
 
 }
 
@@ -52,7 +53,9 @@ void ModelSet::insertTerminalHash(long id, Terminal t) {
     m_terminalHash.insert(id, t);
 }
 
-
+void ModelSet::insertWireConnection(ItemBase* item, TerminalPair tp) {
+    m_wireConnection.insert(item, tp);
+}
 
 void ModelSet::insertTerminalnameHash(QString name, Terminal t) {
     //m_terminalnameHash.insert(name, t);
@@ -86,6 +89,13 @@ void ModelSet::addItem(ItemBase * item) {
 
 QList<ItemBase *> ModelSet::getItemList() {
     return m_itemList;
+}
+
+QPair<ModelSet::Terminal, ModelSet::Terminal> ModelSet::getWireConnection(ItemBase* item) {
+    if (m_wireConnection.contains(item)) {
+        return m_wireConnection[item];
+    }
+    return QPair<Terminal, Terminal>();
 }
 
 long ModelSet::setId() {
@@ -125,6 +135,7 @@ void ModelSet::setKeyModuleID(QString moduleID) {
 void ModelSet::emptyItemList() {
     m_itemList.clear();
     m_labelHash.clear();
+    m_wireConnection.clear();
 }
 
 QPair<ItemBase *, QString> ModelSet::getItemAndCID2(long terminalId) {
@@ -275,7 +286,7 @@ void ModelSet::appendSetConnectionList(int ind, QSharedPointer<SetConnection> se
 
 
 bool ModelSet::isMicrocontroller() {
-    return MICROCONTROLLER.contains(m_keyTitle);
+    return MICROCONTROLLER.contains(m_keyModuleID);
 }
 
 QString ModelSet::getTerminalName(QString moduleID, QString connectorID) {
@@ -294,6 +305,30 @@ void ModelSet::deleteSetConnection(QSharedPointer<SetConnection> setConnection) 
     if (m_setConnection == setConnection) m_setConnection.clear();
     if (m_fromSetConnectionList.contains(setConnection)) m_fromSetConnectionList.removeOne(setConnection);
     if (m_toSetConnectionList.contains(setConnection)) m_toSetConnectionList.removeOne(setConnection);
+}
+
+ModelSet::Terminal ModelSet::findTerminal(long itemID, QString connectorID) {
+    ItemBase * get = NULL;
+    foreach(ItemBase * item, m_itemList) {
+        if (item->id() == itemID) {
+            get = item;
+            break;
+        }
+    }
+    if (!get) {
+        if (m_keyid == itemID) get = m_keyItem;
+    }
+
+    foreach(TerminalPair tpair, m_connections) {
+        Terminal t = tpair.first;
+        if (m_labelHash[t.label] == get && t.connectorID == connectorID)
+            return t;
+        t = tpair.second;
+        if (m_labelHash[t.label] == get && t.connectorID == connectorID)
+            return t;
+    }
+    return Terminal();
+
 }
 
 ///////
@@ -377,3 +412,19 @@ QList<QString> SetConnection::getConnectedTerminal(int ind) {
     return connectedName;
 }
 
+void SetConnection::insertWireConnection(ItemBase * item, long itemID1, QString connectorID1, long itemID2, QString connectorID2) {
+    QPair<long, QString> p1(itemID1, connectorID1);
+    QPair<long, QString> p2(itemID2, connectorID2);
+    m_wireConnection.insert(item, QPair<LongStringPair, LongStringPair>(p1, p2));
+}
+
+QPair<ModelSet::Terminal, ModelSet::Terminal> SetConnection::getWireConnection(ItemBase* item) {
+    if (m_wireConnection.contains(item)) {
+        QPair<LongStringPair, LongStringPair> pair = m_wireConnection[item];
+        ModelSet::Terminal t1 = m_fromModelSet->findTerminal(pair.first.first, pair.first.second);
+        ModelSet::Terminal t2 = m_toModelSet->findTerminal(pair.second.first, pair.second.second);
+        return QPair<ModelSet::Terminal, ModelSet::Terminal>(t1, t2);
+    }
+    return QPair<ModelSet::Terminal, ModelSet::Terminal>();
+
+}

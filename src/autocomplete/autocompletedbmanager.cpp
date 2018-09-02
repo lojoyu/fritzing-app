@@ -486,6 +486,8 @@ QList<QMap<QString, QVariant> *> AutocompleteDBManager::selectConnectionsBetween
     foreach(StringPair s, includePair) {
         if (ind != 1) {
             valueStr += " OR ";
+        } else {
+            valueStr += "WHERE ";
         }
         valueStr += QString("terminal_id='%1' AND to_terminal_id='%2'").arg(s.first).arg(s.second);
         ind++;
@@ -495,7 +497,7 @@ QList<QMap<QString, QVariant> *> AutocompleteDBManager::selectConnectionsBetween
     "INNER JOIN connections c "
     "ON c.id = tc.connection_id AND c.id IN "
     "(SELECT DISTINCT(connection_id) FROM terminals_connections "
-    "WHERE %3) "
+    "%3) "
     "WHERE c.module_id = %1 AND c.to_module_id = %2 "
     "ORDER BY c.count DESC, c.id").arg(mid1).arg(mid2).arg(valueStr);
 
