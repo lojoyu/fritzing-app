@@ -100,7 +100,9 @@ public:
     QString pinEqual(QString pintype1, QString pintype2);
     QString getTerminalName(QString moduleID, QString connectorID);
     void deleteSetConnection(QSharedPointer<SetConnection> setConnection);
-
+    void insertWireConnection(ItemBase* item, TerminalPair tp);
+    TerminalPair getWireConnection(ItemBase* item);
+    Terminal findTerminal(long itemID, QString connectorID);
 
 protected:
 	//static long m_nextid;
@@ -124,12 +126,13 @@ protected:
     QSharedPointer<SetConnection> m_setConnection;
     QSharedPointer<SetConnection> m_breadboardConnection;
     bool m_confirm;
+    QHash<ItemBase *, TerminalPair> m_wireConnection;
 
 };
 
 
 class SetConnection {
-
+    typedef QPair<long, QString> LongStringPair;
 public:
 	struct Connection {
 		QString fromTerminal;
@@ -163,6 +166,8 @@ public:
     void setConfirm();
     void setConfirm(bool confirm);
     QList<QString> getConnectedTerminal(int ind);
+    void insertWireConnection(ItemBase * item, long itemID1, QString connectorID1, long itemID2, QString connectorID2);
+    QPair<ModelSet::Terminal, ModelSet::Terminal> getWireConnection(ItemBase* item);
 
 protected:
 	QSharedPointer<ModelSet> m_fromModelSet;
@@ -173,6 +178,7 @@ protected:
 	QList<Connection> m_connectionList;
 	QList<ItemBase *> m_wireList;
 	bool m_confirm;
+    QHash<ItemBase *,  QPair<LongStringPair, LongStringPair>> m_wireConnection;
 };
 
 Q_DECLARE_METATYPE(ModelSet)

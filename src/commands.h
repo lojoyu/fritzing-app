@@ -1198,7 +1198,7 @@ protected:
 class AddSetToSetCommand : public BaseCommand
 {
 public:
-    AddSetToSetCommand(class SketchWidget *sketchWidget, QSharedPointer<ModelSet> modelSet, QSharedPointer<SetConnection> setConnection, QUndoCommand *parent);
+    AddSetToSetCommand(class SketchWidget *sketchWidget, QSharedPointer<ModelSet> modelSet, QSharedPointer<SetConnection> setConnection, bool confirmSetConnection, QUndoCommand *parent);
     void undo();
     void redo();
 
@@ -1208,6 +1208,7 @@ protected:
 protected:
     QSharedPointer<ModelSet> m_modelSet;
     QSharedPointer<SetConnection> m_setConnection;
+    bool m_confirmSetConnection;
 };
 
 /////////////////////////////////////////////

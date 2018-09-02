@@ -2285,10 +2285,11 @@ QString AddModelSetCommand::getParamString() const {
 
 /////////////////////////////////////////////
 
-AddSetToSetCommand::AddSetToSetCommand(SketchWidget *sketchWidget, QSharedPointer<ModelSet> modelSet, QSharedPointer<SetConnection> setConnection, QUndoCommand *parent)
+AddSetToSetCommand::AddSetToSetCommand(SketchWidget *sketchWidget, QSharedPointer<ModelSet> modelSet, QSharedPointer<SetConnection> setConnection, bool confirmSetConnection, QUndoCommand *parent)
     : BaseCommand(BaseCommand::CrossView, sketchWidget, parent){
 	m_modelSet = modelSet;
 	m_setConnection = setConnection;
+	m_confirmSetConnection = confirmSetConnection;
 }
     
 void AddSetToSetCommand::undo() {
@@ -2297,7 +2298,7 @@ void AddSetToSetCommand::undo() {
 }
 
 void AddSetToSetCommand::redo() {
-    m_sketchWidget->addSetToSet(m_modelSet, m_setConnection, false);
+    m_sketchWidget->addSetToSet(m_modelSet, m_setConnection, m_confirmSetConnection, false);
     BaseCommand::redo();
 }
 
@@ -2322,7 +2323,7 @@ void AddSetConnectionCommand::undo() {
 }
 
 void AddSetConnectionCommand::redo() {
-    m_sketchWidget->addSetToSet(m_setConnection->getToModelSet(), m_setConnection, false);
+    m_sketchWidget->addSetToSet(m_setConnection->getToModelSet(), m_setConnection, true, false);
     BaseCommand::redo();
 }
 

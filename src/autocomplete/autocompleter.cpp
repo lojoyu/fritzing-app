@@ -304,7 +304,7 @@ void AutoCompleter::getSuggestionConnectionSelf(QSharedPointer<ModelSet> fromMod
     qDeleteAll(connectionList);
     connectionList.clear();
     if (setConnectionList.length() > 0) {
-        sketchWidget->addSetToSet(toModelset, setConnectionList[0], true);
+        sketchWidget->addSetToSet(toModelset, setConnectionList[0], false, true);
         emit addSetConnectionSignal(existModelset, setConnectionList);
     }
 
