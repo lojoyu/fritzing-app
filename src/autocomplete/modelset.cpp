@@ -2,7 +2,7 @@
 
 #include "../debugdialog.h"
 
-const QList<QString> MICROCONTROLLER({"Arduino Uno (Rev3)"});
+const QList<QString> MICROCONTROLLER({"arduino_Uno_Rev3(fix)"});
 
 
 typedef QPair<QString, QString> PairString;
@@ -286,7 +286,7 @@ void ModelSet::appendSetConnectionList(int ind, QSharedPointer<SetConnection> se
 
 
 bool ModelSet::isMicrocontroller() {
-    return MICROCONTROLLER.contains(m_keyTitle);
+    return MICROCONTROLLER.contains(m_keyModuleID);
 }
 
 QString ModelSet::getTerminalName(QString moduleID, QString connectorID) {
