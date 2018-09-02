@@ -1008,6 +1008,7 @@ public slots:
 protected:
 
     void onItemEvent(QListWidgetItem*, bool);
+    void loadImage(ModelPart * modelPart, QListWidgetItem * lwi);
 
     //QList<QSharedPointer<ModelSet>> m_modelSetList ;
     //QList<QSharedPointer<ModelSet>> m_toModelsetList ;

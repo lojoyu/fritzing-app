@@ -8,13 +8,17 @@
 #include "../sketch/sketchwidget.h"
 #include "../autocomplete/autocompleter.h"
 #include "../debugdialog.h"
-
+#include "../items/partfactory.h"
+#include "../layerattributes.h"
+#include "../infoview/htmlinfoview.h"
+#include "../fsvgrenderer.h"
 
 void MainWindow::initRecommendList(SketchWidget * sketchWidget){
 
     m_sketchwidget = sketchWidget ;
     m_recommendlist = new QListWidget ;
     m_recommendlist->setMouseTracking(true) ;
+    m_recommendlist->setViewMode(QListWidget::IconMode);
     makeDock(tr("Recommand List"), m_recommendlist, 30, 30);
 
     connect(m_recommendlist, SIGNAL(itemEntered(QListWidgetItem*)),
@@ -79,13 +83,23 @@ void MainWindow::setTosetList(QList<QSharedPointer<ModelSet>> toModelsetList, QL
 
     m_recommendlist->clear();
     for (int i = 0 ; i < toModelsetList.length() ; i++) {
-        QListWidgetItem* item = new QListWidgetItem(QString("%1 recommend").arg(i+1));
+        //QListWidgetItem* item = new QListWidgetItem(QString("%1 recommend").arg(i+1));
+        QListWidgetItem* item = new QListWidgetItem();
         QVariantList itemData;
         itemData.append(QVariant(SuggestionType::setToSet));
         itemData.append(QVariant::fromValue(toModelsetList[i]));
         itemData.append(QVariant::fromValue(setConnectionList[i]));
+        ModelPart * modelPart = m_referenceModel->retrieveModelPart(toModelsetList[i]->keyModuleID());
+        loadImage(modelPart,item);
         item->setData(Qt::UserRole, itemData);
+        item->setSizeHint(QSize(50,60));
         m_recommendlist->insertItem(i ,item) ;
+
+        QLabel * label = new QLabel();
+        label->setAlignment(Qt::AlignCenter);
+        label->setText("<a href=\"https://github.com/lojoyu/fritzing-app\">github");
+        label->setOpenExternalLinks(true);
+        m_recommendlist->setItemWidget(m_recommendlist->item(i),label);
     }
 }
 
@@ -94,12 +108,25 @@ void MainWindow::setModelSetList(QList<QSharedPointer<ModelSet>> modelSetList){
     m_recommendlist->clear();
 
     for (int i = 0 ; i < modelSetList.length() ; i++) {
-        QListWidgetItem* item = new QListWidgetItem(QString("%1 recommend").arg(i+1));
+        //QListWidgetItem* item = new QListWidgetItem(QString("%1 recommend").arg(i+1));
+        QListWidgetItem* item = new QListWidgetItem();
         QVariantList itemData;
         itemData.append(QVariant(SuggestionType::toModelSet));
         itemData.append(QVariant::fromValue(modelSetList[i]));
+        ModelPart * modelPart = m_referenceModel->retrieveModelPart(modelSetList[i]->keyModuleID());
+        loadImage(modelPart,item);
         item->setData(Qt::UserRole, itemData);
+        item->setSizeHint(QSize(50,60));
         m_recommendlist->insertItem(i ,item) ;
+
+
+        QLabel * label = new QLabel();
+        label->setAlignment(Qt::AlignCenter);
+        label->setText("<a href=\"https://github.com/lojoyu/fritzing-app\">github");
+        label->setOpenExternalLinks(true);
+        m_recommendlist->setItemWidget(m_recommendlist->item(i),label);
+
+
     }
     m_sketchwidget->selectModelSet(modelSetList[0], true);
 
@@ -108,6 +135,25 @@ void MainWindow::setModelSetList(QList<QSharedPointer<ModelSet>> modelSetList){
 void MainWindow::clearList() {
     //qDeleteAll(m_recommendlist->);
     m_recommendlist->clear();
+}
+
+void MainWindow::loadImage(ModelPart * modelPart, QListWidgetItem * lwi)
+{
+    ItemBase * itemBase ;
+
+    itemBase = PartFactory::createPart(modelPart, ViewLayer::NewTop, ViewLayer::IconView, ViewGeometry(), ItemBase::getNextID(), NULL, NULL, false);
+    LayerAttributes layerAttributes ;
+    itemBase->initLayerAttributes(layerAttributes, ViewLayer::IconView, ViewLayer::Icon, itemBase->viewLayerPlacement(), false, false);
+    FSvgRenderer * renderer = itemBase->setUpImage(modelPart, layerAttributes);
+    itemBase->setFilename(renderer->filename());
+    itemBase->setSharedRendererEx(renderer);
+
+    QSize size(HtmlInfoView::STANDARD_ICON_IMG_WIDTH, HtmlInfoView::STANDARD_ICON_IMG_HEIGHT);
+    QPixmap * pixmap = FSvgRenderer::getPixmap(itemBase->renderer(), size);
+    lwi->setIcon(QIcon(*pixmap));
+    delete pixmap;
+    lwi->setData(Qt::UserRole + 1, itemBase->renderer()->defaultSize());
+
 }
 
 //void MainWindow::addRecommendList(QList<QSharedPointer<ModelSet>> toModelsetList, QList<QSharedPointer<SetConnection>> setConnectionList){
