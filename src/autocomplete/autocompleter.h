@@ -31,7 +31,7 @@ public:
 
 signals:
     void addModelSetSignal(QList<QSharedPointer<ModelSet>>);
-    void addSetConnectionSignal(QList<QSharedPointer<ModelSet>>, QList<QSharedPointer<SetConnection>> setConnectionList);
+    void addSetConnectionSignal(QList<QSharedPointer<ModelSet>>, QList<QSharedPointer<SetConnection>> setConnectionList, QList<QList<QString> *> tutorialList);
     void clearRecommendListSignal();
 
 protected:

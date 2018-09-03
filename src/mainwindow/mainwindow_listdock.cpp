@@ -18,7 +18,10 @@ void MainWindow::initRecommendList(SketchWidget * sketchWidget){
 
     //m_sketchwidget = sketchWidget ;
     //m_recommendlist = new QListWidget ;
-    RecommendListWidget * m_recommendlist = new RecommendListWidget(sketchWidget, m_referenceModel);
+    QListWidget * m_tutorial = new QListWidget();
+    makeDock(tr("Tutorial"), m_tutorial, 30, 30);
+
+    RecommendListWidget * m_recommendlist = new RecommendListWidget(sketchWidget, m_referenceModel, m_tutorial);
     m_recommendlist->setMouseTracking(true) ;
     m_recommendlist->setViewMode(QListWidget::IconMode);
     makeDock(tr("Recommand List"), m_recommendlist, 30, 30);

@@ -149,6 +149,13 @@ QList<QMap<QString, QVariant> *> AutocompleteDBManager::getConnectionsBetweenMod
     return singleton->selectConnectionsBetweenModules(mid1, mid2, includePair);
 }
 
+QList<QList<QString> *> AutocompleteDBManager::getTutorialList(QList<long> ids, int max) {
+    if (singleton == NULL) {
+        singleton = new AutocompleteDBManager(defaultname);
+    }
+    return singleton->selectTutorialList(ids, max);
+}
+
 /*
 AutocompleteDBManager::getNextSet(QString title) {
 	if (singleton == NULL) {
@@ -532,6 +539,54 @@ QList<QMap<QString, QVariant> *> AutocompleteDBManager::selectConnectionsBetween
         m_debugExec(QString("couldn't find connection of %1").arg(valueStr), query);
     }
     return mapList;
+}
+
+QList<QList<QString> *> AutocompleteDBManager::selectTutorialList(QList<long> ids, int max) {
+    QList<QList<QString> *> tutorialList;
+
+    QString valueStr = "";
+    QString orderStr = "";
+    int ind = 1;
+    foreach(long id, ids) {
+        if (ind != 1) {
+            valueStr += ",";
+            orderStr += ",";
+        }
+        valueStr += QString("%1").arg(id);
+        orderStr += QString("ct.connection_id=%1 DESC").arg(id);
+        ind++;
+    }
+    DebugDialog::debug(valueStr);
+    DebugDialog::debug(orderStr);
+
+    QString queryStr = QString("SELECT ct.connection_id, tl.link FROM tutorial_link tl "
+    "INNER JOIN connections_tutorial ct "
+    "ON tl.id = ct.tutorial_id AND ct.connection_id IN (%1) "
+    "ORDER BY %2").arg(valueStr).arg(orderStr);
+
+    QSqlQuery query(m_database);
+    query.prepare(queryStr);
+    //query.bindValue(":values",valueStr);
+    QList<QString>* tList;
+    long prev = -1;
+    if (query.exec()) {
+        while(query.next()) {
+            long id = query.value(0).toLongLong();
+            if (prev == -1 || prev != id) {
+                tList = new QList<QString>();
+                tutorialList.append(tList);
+                prev = id;
+            }
+            tList->append(query.value(1).toString());
+        }
+
+    } else {
+        m_debugExec(QString("couldn't find connection of %1").arg(valueStr), query);
+    }
+    return tutorialList;
+
+
+
 }
 
 

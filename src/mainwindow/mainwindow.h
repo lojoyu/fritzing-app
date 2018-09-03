@@ -1024,7 +1024,7 @@ protected:
 //    SketchWidget * m_sketchwidget;
     //bool b_setmodelSet ;
     //bool b_setToset ;
-
+    //RecommendListWidget * m_recommendlist;
 };
 
 

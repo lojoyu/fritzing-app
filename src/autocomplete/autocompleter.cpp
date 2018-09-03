@@ -236,8 +236,8 @@ void AutoCompleter::getSuggestionNextSelf(QSharedPointer<ModelSet> modelset, Ske
 
     long setid = modelset->setId();
    QList<QPair<long, long>> toList = AutocompleteDBManager::getFrequentConnect(setid, m_maxSuggestion, nameList);
-    if (toList.length() == 0) {
-        emit addSetConnectionSignal(toModelsetList, setConnectionList);
+    if (toList.length() == 0) { // what?
+        emit addSetConnectionSignal(toModelsetList, setConnectionList, QList<QList<QString> *>());
         return;
     }
     QList<long> idList;
@@ -248,7 +248,7 @@ void AutoCompleter::getSuggestionNextSelf(QSharedPointer<ModelSet> modelset, Ske
     }
     QList<QMap<QString, QVariant> *> connectionList = AutocompleteDBManager::getConnectionsByID(idList);
     QList<QMap<QString, QVariant> *> modelsetMapList = AutocompleteDBManager::getModelSetsByID(moduleList);
-
+    QList<QList<QString> *> tutorialList = AutocompleteDBManager::getTutorialList(idList, 20);
 
     mapListToModelSet(NULL, sketchWidget, modelsetMapList, toModelsetList);
     expandModelSetList(moduleList, toModelsetList);
@@ -259,7 +259,7 @@ void AutoCompleter::getSuggestionNextSelf(QSharedPointer<ModelSet> modelset, Ske
     connectionList.clear();
     modelsetMapList.clear();
 
-    emit addSetConnectionSignal(toModelsetList, setConnectionList);
+    emit addSetConnectionSignal(toModelsetList, setConnectionList, tutorialList);
    // mw->setTosetList(toModelsetList, setConnectionList);
     //sketchWidget->addSetToSet(toModelsetList[0], setConnectionList[0], true);
 
@@ -280,7 +280,7 @@ void AutoCompleter::getSuggestionExistSelf(QSharedPointer<ModelSet> modelset, Sk
 
     qDeleteAll(connectionList);
     connectionList.clear();
-    emit addSetConnectionSignal(existModelset, setConnectionList);
+    emit addSetConnectionSignal(existModelset, setConnectionList, QList<QList<QString>*>());
 
 } 
 
@@ -307,7 +307,7 @@ void AutoCompleter::getSuggestionConnectionSelf(QSharedPointer<ModelSet> fromMod
     connectionList.clear();
     if (setConnectionList.length() > 0) {
         sketchWidget->addSetToSet(toModelset, setConnectionList[0], false, true);
-        emit addSetConnectionSignal(existModelset, setConnectionList);
+        emit addSetConnectionSignal(existModelset, setConnectionList, QList<QList<QString>*>());
     }
 
 

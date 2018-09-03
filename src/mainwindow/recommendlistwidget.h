@@ -24,7 +24,8 @@ public:
         toModelSet,
         setToSet
     };
-    RecommendListWidget(SketchWidget * sketchWidget, QPointer<ReferenceModel> referenceModel, QWidget *parent = 0);
+    RecommendListWidget(SketchWidget * sketchWidget, QPointer<ReferenceModel> referenceModel,
+                        QListWidget * tutorialList, QWidget *parent = 0);
 
     void mousePressEvent(QMouseEvent *event);
     void mouseMoveEvent(QMouseEvent *event);
@@ -35,7 +36,7 @@ public slots:
     void onItemEnteredSlot(QListWidgetItem*);
     void onItemClickedSlot(QListWidgetItem*);
 
-    void setTosetList(QList<QSharedPointer<ModelSet>> toModelsetList, QList<QSharedPointer<SetConnection>> setConnectionList);
+    void setTosetList(QList<QSharedPointer<ModelSet>> toModelsetList, QList<QSharedPointer<SetConnection>> setConnectionList, QList<QList<QString> *> tutorialLink);
     void setModelSetList(QList<QSharedPointer<ModelSet>> modelSetList);
     void clearList();
 
@@ -48,6 +49,7 @@ protected:
     SketchWidget * m_sketchwidget;
     QPointer<ReferenceModel> m_referenceModel;
     QPoint m_startPoint;
+    QListWidget * m_tutorial;
 
 };
 

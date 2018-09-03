@@ -11,10 +11,12 @@
 #include "../layerattributes.h"
 #include "../fsvgrenderer.h"
 #include "../infoview/htmlinfoview.h"
+#include "../debugdialog.h"
 
-RecommendListWidget::RecommendListWidget(SketchWidget * sketchWidget, QPointer<ReferenceModel> referenceModel, QWidget *parent) {
+RecommendListWidget::RecommendListWidget(SketchWidget * sketchWidget, QPointer<ReferenceModel> referenceModel, QListWidget * tutorialList, QWidget *parent) {
 	m_sketchwidget = sketchWidget;
     m_referenceModel = referenceModel;
+    m_tutorial = tutorialList;
 	connect(this, SIGNAL(itemEntered(QListWidgetItem*)),
                        this, SLOT(onItemEnteredSlot(QListWidgetItem*)));
 
@@ -25,8 +27,8 @@ RecommendListWidget::RecommendListWidget(SketchWidget * sketchWidget, QPointer<R
 
     connect(autocompleter, SIGNAL(addModelSetSignal(QList<QSharedPointer<ModelSet>>)),
                        this, SLOT(setModelSetList(QList<QSharedPointer<ModelSet>>)));
-    connect(autocompleter, SIGNAL(addSetConnectionSignal(QList<QSharedPointer<ModelSet>>, QList<QSharedPointer<SetConnection>>)),
-                       this, SLOT(setTosetList(QList<QSharedPointer<ModelSet>>, QList<QSharedPointer<SetConnection>>))) ;
+    connect(autocompleter, SIGNAL(addSetConnectionSignal(QList<QSharedPointer<ModelSet>>, QList<QSharedPointer<SetConnection>>, QList<QList<QString> *>)),
+                       this, SLOT(setTosetList(QList<QSharedPointer<ModelSet>>, QList<QSharedPointer<SetConnection>>, QList<QList<QString> *>))) ;
 
     connect(autocompleter, SIGNAL(clearRecommendListSignal()), this, SLOT(clearList()));
 }
@@ -93,6 +95,22 @@ void RecommendListWidget::onItemEvent(QListWidgetItem* listitem, bool hover) {
     if (type == SuggestionType::toModelSet) {
         m_sketchwidget->selectModelSet(itemDataV[1].value<QSharedPointer<ModelSet>>(), hover);
     } else {
+        QVariantList tList = itemDataV[3].value<QVariantList>();
+        m_tutorial->clear();
+
+        for (int i = 0 ; i < tList.length() ; i++) {
+            QString str = tList[i].value<QString>();
+            QLabel * label = new QLabel();
+            label->setAlignment(Qt::AlignLeft);
+            label->setText(QString("<a href='%1'>tutorial %2</a>").arg(str).arg(i));
+            label->setOpenExternalLinks(true);
+            //layout->addWidget(label);
+            QListWidgetItem* itemlist = new QListWidgetItem();
+            m_tutorial->insertItem(i, itemlist);
+            m_tutorial->setItemWidget(m_tutorial->item(i), label);
+
+        }
+
         m_sketchwidget->selectSetToSet(itemDataV[1].value<QSharedPointer<ModelSet>>(), itemDataV[2].value<QSharedPointer<SetConnection>>(), false, hover) ;
     }
 
@@ -103,7 +121,7 @@ void RecommendListWidget::onItemEnteredSlot(QListWidgetItem* listitem){
     return;
 }
 
-void RecommendListWidget::setTosetList(QList<QSharedPointer<ModelSet>> toModelsetList, QList<QSharedPointer<SetConnection>> setConnectionList){
+void RecommendListWidget::setTosetList(QList<QSharedPointer<ModelSet>> toModelsetList, QList<QSharedPointer<SetConnection>> setConnectionList, QList<QList<QString> *> tutorialLink){
 
     //m_recommendlist->clear();
     clear();
@@ -114,6 +132,13 @@ void RecommendListWidget::setTosetList(QList<QSharedPointer<ModelSet>> toModelse
         itemData.append(QVariant(SuggestionType::setToSet));
         itemData.append(QVariant::fromValue(toModelsetList[i]));
         itemData.append(QVariant::fromValue(setConnectionList[i]));
+        QVariantList variantList;
+        if (tutorialLink.length() > i) {
+            foreach(QString str, *(tutorialLink[i])) {
+                variantList.append(str);
+            }
+        }
+        itemData.append(QVariant::fromValue(variantList));
 
         ModelPart * modelPart = m_referenceModel->retrieveModelPart(toModelsetList[i]->keyModuleID());
         loadImage(modelPart, item);
