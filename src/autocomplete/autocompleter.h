@@ -44,7 +44,7 @@ protected:
     QString getModuleIDByTitle(QString title, SketchWidget * sketchWidget);
     QString findRestModuleID(QString title);
     void mapListToModelSet(ItemBase * keyItem, SketchWidget * sketchWidget, QList<QMap<QString, QVariant> *> & resultList, QList<QSharedPointer<ModelSet>> & modelSetList);
-    void mapListToSetConnection(QSharedPointer<ModelSet> modelset, QList<QSharedPointer<ModelSet>> & toModelsetList, 
+    QList<long> mapListToSetConnection(QSharedPointer<ModelSet> modelset, QList<QSharedPointer<ModelSet>> & toModelsetList,
         QList<QMap<QString, QVariant> *> & connectionList, QList<QSharedPointer<SetConnection>> & setConnectionList, bool inorder);
     void expandModelSetList(QList<long> moduleList, QList<QSharedPointer<ModelSet>> & toModelsetList);
     //void addModelSet(QSharedPointer<ModelSet>);
