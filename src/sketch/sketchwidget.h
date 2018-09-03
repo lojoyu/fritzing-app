@@ -822,16 +822,22 @@ protected:
     AddModelSetCommand * newAddModelSetCommand(QSharedPointer<ModelSet>, QUndoCommand * parentCommand);
     AddSetToSetCommand * newAddSetToSetCommand(QSharedPointer<ModelSet> modelSet, QSharedPointer<SetConnection> setConnection, bool confirmSetConnection, QUndoCommand * parentCommand);
     AddSetConnectionCommand * newAddSetConnectionCommand(QSharedPointer<SetConnection> setConnection, QUndoCommand * parentCommand);
+    bool dragEnterEventFromRecommend(QDragEnterEvent * event);
+    bool dragMoveEventFromRecommend(QDragMoveEvent * event);
+    bool dropEventFromRecommend(QDropEvent * event);
+    void updateModelSetPos(QPoint pos);
 
 protected:
 	bool m_autoComplete;
     QSharedPointer<ModelSet> m_prevModelSet;
     QSharedPointer<ModelSet> m_pressModelSet;
+    QSharedPointer<ModelSet> m_dragModelSet;
     QSharedPointer<SetConnection> m_prevSetConnection;
     QList<QSharedPointer<ModelSet>> m_savedModelSet;
     QHash<QString, QString> m_breadBoardPin; //pintype,
     QSharedPointer<ModelSet> m_breadBoardModelSet;
     QPointF m_tempPoint = QPointF(0, 0);
+    bool m_draggingSuggestion = false;
 
 };
 

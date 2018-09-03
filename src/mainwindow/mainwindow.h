@@ -54,6 +54,7 @@ $Date: 2013-04-28 14:14:07 +0200 (So, 28. Apr 2013) $
 #include "../routingstatus.h"
 #include "../fritzing-app/src/autocomplete/modelset.h"
 #include "../fritzing-app/src/autocomplete/autocompleter.h"
+#include "recommendlistwidget.h"
 
 QT_BEGIN_NAMESPACE
 class QAction;
@@ -986,46 +987,45 @@ protected:
     static QRegExp GuidMatcher;
 
 
+//recommend list
+//public:
+//    enum SuggestionType {
+//        toModelSet,
+//        setToSet
+//    };
+//public slots:
 
-    //recommend list
-public:
-    enum SuggestionType {
-        toModelSet,
-        setToSet
-    };
-public slots:
+//    void onItemEnteredSlot(QListWidgetItem*);
+//    void onItemClickedSlot(QListWidgetItem*);
 
-    void onItemEnteredSlot(QListWidgetItem*);
-    void onItemClickedSlot(QListWidgetItem*);
-
-    //void CurrentRowItem(int) ;
-    //void addRecommendList(QList<QSharedPointer<ModelSet>>, QList<QSharedPointer<SetConnection>>);
-    //void addmodelSetList(QList<QSharedPointer<ModelSet>>);
-    void setTosetList(QList<QSharedPointer<ModelSet>> toModelsetList, QList<QSharedPointer<SetConnection>> setConnectionList);
-    void setModelSetList(QList<QSharedPointer<ModelSet>> modelSetList);
-    void clearList();
+//    //void CurrentRowItem(int) ;
+//    //void addRecommendList(QList<QSharedPointer<ModelSet>>, QList<QSharedPointer<SetConnection>>);
+//    //void addmodelSetList(QList<QSharedPointer<ModelSet>>);
+//    void setTosetList(QList<QSharedPointer<ModelSet>> toModelsetList, QList<QSharedPointer<SetConnection>> setConnectionList);
+//    void setModelSetList(QList<QSharedPointer<ModelSet>> modelSetList);
+//    void clearList();
 
 protected:
 
-    void onItemEvent(QListWidgetItem*, bool);
-    void loadImage(ModelPart * modelPart, QListWidgetItem * lwi);
+//    void onItemEvent(QListWidgetItem*, bool);
+//    void loadImage(ModelPart * modelPart, QListWidgetItem * lwi);
 
-    //QList<QSharedPointer<ModelSet>> m_modelSetList ;
-    //QList<QSharedPointer<ModelSet>> m_toModelsetList ;
-    //QList<QSharedPointer<SetConnection>> m_setConnectionList ;
-    //SketchWidget * sk ;
+//    //QList<QSharedPointer<ModelSet>> m_modelSetList ;
+//    //QList<QSharedPointer<ModelSet>> m_toModelsetList ;
+//    //QList<QSharedPointer<SetConnection>> m_setConnectionList ;
+//    //SketchWidget * sk ;
 
-    //QPointer <QListWidget> Recommendlist ;
+//    //QPointer <QListWidget> Recommendlist ;
 
-    //QList<QSharedPointer<ModelSet>> m_modelSetList_1 ;
-    //QList<QSharedPointer<ModelSet>> m_toModelsetList_1 ;
-    //QList<QSharedPointer<SetConnection>> m_setConnectionList_1 ;
-    QListWidget * m_recommendlist;
-    SketchWidget * m_sketchwidget;
+//    //QList<QSharedPointer<ModelSet>> m_modelSetList_1 ;
+//    //QList<QSharedPointer<ModelSet>> m_toModelsetList_1 ;
+//    //QList<QSharedPointer<SetConnection>> m_setConnectionList_1 ;
+    //RecommendListWidget * m_recommendlist;
+//    SketchWidget * m_sketchwidget;
     //bool b_setmodelSet ;
     //bool b_setToset ;
 
 };
-//Q_DECLARE_METATYPE(MainWindow);
+
 
 #endif

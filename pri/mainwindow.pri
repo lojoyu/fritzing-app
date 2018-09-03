@@ -21,6 +21,7 @@ HEADERS += \
     src/mainwindow/fritzingwindow.h \
     src/mainwindow/mainwindow.h \
     src/mainwindow/sketchareawidget.h \
+    src/mainwindow/recommendlistwidget.h
     
 SOURCES += \
     src/mainwindow/fdockwidget.cpp \
@@ -31,5 +32,6 @@ SOURCES += \
     src/mainwindow/mainwindow_dock.cpp \
     src/mainwindow/mainwindow_listdock.cpp \
     src/mainwindow/sketchareawidget.cpp \
+    src/mainwindow/recommendlistwidget.cpp
     
 

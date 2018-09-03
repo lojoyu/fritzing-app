@@ -12,29 +12,31 @@
 #include "../layerattributes.h"
 #include "../infoview/htmlinfoview.h"
 #include "../fsvgrenderer.h"
+#include "recommendlistwidget.h"
 
 void MainWindow::initRecommendList(SketchWidget * sketchWidget){
 
-    m_sketchwidget = sketchWidget ;
-    m_recommendlist = new QListWidget ;
+    //m_sketchwidget = sketchWidget ;
+    //m_recommendlist = new QListWidget ;
+    RecommendListWidget * m_recommendlist = new RecommendListWidget(sketchWidget, m_referenceModel);
     m_recommendlist->setMouseTracking(true) ;
     m_recommendlist->setViewMode(QListWidget::IconMode);
     makeDock(tr("Recommand List"), m_recommendlist, 30, 30);
 
-    connect(m_recommendlist, SIGNAL(itemEntered(QListWidgetItem*)),
-                       this, SLOT(onItemEnteredSlot(QListWidgetItem*)));
+    // connect(m_recommendlist, SIGNAL(itemEntered(QListWidgetItem*)),
+    //                    this, SLOT(onItemEnteredSlot(QListWidgetItem*)));
 
-    connect(m_recommendlist, SIGNAL(itemClicked(QListWidgetItem*)),
-                this, SLOT(onItemClickedSlot(QListWidgetItem*)));
+    // connect(m_recommendlist, SIGNAL(itemClicked(QListWidgetItem*)),
+    //             this, SLOT(onItemClickedSlot(QListWidgetItem*)));
 
-    AutoCompleter * autocompleter = AutoCompleter::getAutoCompleter();
+    // AutoCompleter * autocompleter = AutoCompleter::getAutoCompleter();
 
-    connect(autocompleter, SIGNAL(addModelSetSignal(QList<QSharedPointer<ModelSet>>)),
-                       this, SLOT(setModelSetList(QList<QSharedPointer<ModelSet>>)));
-    connect(autocompleter, SIGNAL(addSetConnectionSignal(QList<QSharedPointer<ModelSet>>, QList<QSharedPointer<SetConnection>>)),
-                       this, SLOT(setTosetList(QList<QSharedPointer<ModelSet>>, QList<QSharedPointer<SetConnection>>))) ;
+    // connect(autocompleter, SIGNAL(addModelSetSignal(QList<QSharedPointer<ModelSet>>)),
+    //                    this, SLOT(setModelSetList(QList<QSharedPointer<ModelSet>>)));
+    // connect(autocompleter, SIGNAL(addSetConnectionSignal(QList<QSharedPointer<ModelSet>>, QList<QSharedPointer<SetConnection>>)),
+    //                    this, SLOT(setTosetList(QList<QSharedPointer<ModelSet>>, QList<QSharedPointer<SetConnection>>))) ;
 
-    connect(autocompleter, SIGNAL(clearRecommendListSignal()), this, SLOT(clearList()));
+    // connect(autocompleter, SIGNAL(clearRecommendListSignal()), this, SLOT(clearList()));
 }
 
 //void MainWindow::CurrentRowItem(int i){
@@ -57,101 +59,101 @@ void MainWindow::initRecommendList(SketchWidget * sketchWidget){
 
 //}
 
-void MainWindow::onItemClickedSlot(QListWidgetItem* listitem) {
-    onItemEvent(listitem, false);
-    return;
-}
+//void MainWindow::onItemClickedSlot(QListWidgetItem* listitem) {
+//    onItemEvent(listitem, false);
+//    return;
+//}
 
-void MainWindow::onItemEvent(QListWidgetItem* listitem, bool hover) {
-    //if (!hover) m_recommendlist->removeItemWidget(listitem);
-    QVariantList itemDataV = listitem->data(Qt::UserRole).toList();
-    SuggestionType type = (SuggestionType)itemDataV[0].toInt();
-    if (type == SuggestionType::toModelSet) {
-        m_sketchwidget->selectModelSet(itemDataV[1].value<QSharedPointer<ModelSet>>(), hover);
-    } else {
-        m_sketchwidget->selectSetToSet(itemDataV[1].value<QSharedPointer<ModelSet>>(), itemDataV[2].value<QSharedPointer<SetConnection>>(), false, hover) ;
-    }
+//void MainWindow::onItemEvent(QListWidgetItem* listitem, bool hover) {
+//    //if (!hover) m_recommendlist->removeItemWidget(listitem);
+//    QVariantList itemDataV = listitem->data(Qt::UserRole).toList();
+//    SuggestionType type = (SuggestionType)itemDataV[0].toInt();
+//    if (type == SuggestionType::toModelSet) {
+//        m_sketchwidget->selectModelSet(itemDataV[1].value<QSharedPointer<ModelSet>>(), hover);
+//    } else {
+//        m_sketchwidget->selectSetToSet(itemDataV[1].value<QSharedPointer<ModelSet>>(), itemDataV[2].value<QSharedPointer<SetConnection>>(), false, hover) ;
+//    }
 
-}
+//}
 
-void MainWindow::onItemEnteredSlot(QListWidgetItem* listitem){
-    onItemEvent(listitem, true);
-    return;
-}
+//void MainWindow::onItemEnteredSlot(QListWidgetItem* listitem){
+//    onItemEvent(listitem, true);
+//    return;
+//}
 
-void MainWindow::setTosetList(QList<QSharedPointer<ModelSet>> toModelsetList, QList<QSharedPointer<SetConnection>> setConnectionList){
+//void MainWindow::setTosetList(QList<QSharedPointer<ModelSet>> toModelsetList, QList<QSharedPointer<SetConnection>> setConnectionList){
 
-    m_recommendlist->clear();
-    for (int i = 0 ; i < toModelsetList.length() ; i++) {
-        //QListWidgetItem* item = new QListWidgetItem(QString("%1 recommend").arg(i+1));
-        QListWidgetItem* item = new QListWidgetItem();
-        QVariantList itemData;
-        itemData.append(QVariant(SuggestionType::setToSet));
-        itemData.append(QVariant::fromValue(toModelsetList[i]));
-        itemData.append(QVariant::fromValue(setConnectionList[i]));
-        ModelPart * modelPart = m_referenceModel->retrieveModelPart(toModelsetList[i]->keyModuleID());
-        loadImage(modelPart, item);
-        item->setData(Qt::UserRole, itemData);
-        item->setSizeHint(QSize(50,60));
-        m_recommendlist->insertItem(i, item) ;
+//    m_recommendlist->clear();
+//    for (int i = 0 ; i < toModelsetList.length() ; i++) {
+//        //QListWidgetItem* item = new QListWidgetItem(QString("%1 recommend").arg(i+1));
+//        QListWidgetItem* item = new QListWidgetItem();
+//        QVariantList itemData;
+//        itemData.append(QVariant(SuggestionType::setToSet));
+//        itemData.append(QVariant::fromValue(toModelsetList[i]));
+//        itemData.append(QVariant::fromValue(setConnectionList[i]));
+//        ModelPart * modelPart = m_referenceModel->retrieveModelPart(toModelsetList[i]->keyModuleID());
+//        loadImage(modelPart, item);
+//        item->setData(Qt::UserRole, itemData);
+//        item->setSizeHint(QSize(50,60));
+//        m_recommendlist->insertItem(i, item) ;
 
-        QLabel * label = new QLabel();
-        label->setAlignment(Qt::AlignCenter);
-        label->setText("<a href=\"https://github.com/lojoyu/fritzing-app\">github");
-        label->setOpenExternalLinks(true);
-        m_recommendlist->setItemWidget(m_recommendlist->item(i),label);
-    }
-}
+//        QLabel * label = new QLabel();
+//        label->setAlignment(Qt::AlignCenter);
+//        label->setText("<a href=\"https://github.com/lojoyu/fritzing-app\">github");
+//        label->setOpenExternalLinks(true);
+//        m_recommendlist->setItemWidget(m_recommendlist->item(i),label);
+//    }
+//}
 
-void MainWindow::setModelSetList(QList<QSharedPointer<ModelSet>> modelSetList){
+//void MainWindow::setModelSetList(QList<QSharedPointer<ModelSet>> modelSetList){
 
-    m_recommendlist->clear();
+//    m_recommendlist->clear();
 
-    for (int i = 0 ; i < modelSetList.length() ; i++) {
-        //QListWidgetItem* item = new QListWidgetItem(QString("%1 recommend").arg(i+1));
-        QListWidgetItem* item = new QListWidgetItem();
-        QVariantList itemData;
-        itemData.append(QVariant(SuggestionType::toModelSet));
-        itemData.append(QVariant::fromValue(modelSetList[i]));
-        ModelPart * modelPart = m_referenceModel->retrieveModelPart(modelSetList[i]->keyModuleID());
-        loadImage(modelPart,item);
-        item->setData(Qt::UserRole, itemData);
-        item->setSizeHint(QSize(50,60));
-        m_recommendlist->insertItem(i ,item) ;
+//    for (int i = 0 ; i < modelSetList.length() ; i++) {
+//        //QListWidgetItem* item = new QListWidgetItem(QString("%1 recommend").arg(i+1));
+//        QListWidgetItem* item = new QListWidgetItem();
+//        QVariantList itemData;
+//        itemData.append(QVariant(SuggestionType::toModelSet));
+//        itemData.append(QVariant::fromValue(modelSetList[i]));
+//        ModelPart * modelPart = m_referenceModel->retrieveModelPart(modelSetList[i]->keyModuleID());
+//        loadImage(modelPart,item);
+//        item->setData(Qt::UserRole, itemData);
+//        item->setSizeHint(QSize(50,60));
+//        m_recommendlist->insertItem(i ,item) ;
 
-        QLabel * label = new QLabel();
-        label->setAlignment(Qt::AlignCenter);
-        label->setText("<a href=\"https://github.com/lojoyu/fritzing-app\">github");
-        label->setOpenExternalLinks(true);
-        m_recommendlist->setItemWidget(m_recommendlist->item(i),label);
-    }
-    m_sketchwidget->selectModelSet(modelSetList[0], true);
+//        QLabel * label = new QLabel();
+//        label->setAlignment(Qt::AlignCenter);
+//        label->setText("<a href=\"https://github.com/lojoyu/fritzing-app\">github");
+//        label->setOpenExternalLinks(true);
+//        m_recommendlist->setItemWidget(m_recommendlist->item(i),label);
+//    }
+//    m_sketchwidget->selectModelSet(modelSetList[0], true);
 
-}
+//}
 
-void MainWindow::clearList() {
-    //qDeleteAll(m_recommendlist->);
-    m_recommendlist->clear();
-}
+//void MainWindow::clearList() {
+//    //qDeleteAll(m_recommendlist->);
+//    m_recommendlist->clear();
+//}
 
-void MainWindow::loadImage(ModelPart * modelPart, QListWidgetItem * lwi)
-{
-    ItemBase * itemBase ;
+//void MainWindow::loadImage(ModelPart * modelPart, QListWidgetItem * lwi)
+//{
+//    ItemBase * itemBase ;
 
-    itemBase = PartFactory::createPart(modelPart, ViewLayer::NewTop, ViewLayer::IconView, ViewGeometry(), ItemBase::getNextID(), NULL, NULL, false);
-    LayerAttributes layerAttributes ;
-    itemBase->initLayerAttributes(layerAttributes, ViewLayer::IconView, ViewLayer::Icon, itemBase->viewLayerPlacement(), false, false);
-    FSvgRenderer * renderer = itemBase->setUpImage(modelPart, layerAttributes);
-    itemBase->setFilename(renderer->filename());
-    itemBase->setSharedRendererEx(renderer);
+//    itemBase = PartFactory::createPart(modelPart, ViewLayer::NewTop, ViewLayer::IconView, ViewGeometry(), ItemBase::getNextID(), NULL, NULL, false);
+//    LayerAttributes layerAttributes ;
+//    itemBase->initLayerAttributes(layerAttributes, ViewLayer::IconView, ViewLayer::Icon, itemBase->viewLayerPlacement(), false, false);
+//    FSvgRenderer * renderer = itemBase->setUpImage(modelPart, layerAttributes);
+//    itemBase->setFilename(renderer->filename());
+//    itemBase->setSharedRendererEx(renderer);
 
-    QSize size(HtmlInfoView::STANDARD_ICON_IMG_WIDTH, HtmlInfoView::STANDARD_ICON_IMG_HEIGHT);
-    QPixmap * pixmap = FSvgRenderer::getPixmap(itemBase->renderer(), size);
-    lwi->setIcon(QIcon(*pixmap));
-    delete pixmap;
-    lwi->setData(Qt::UserRole + 1, itemBase->renderer()->defaultSize());
+//    QSize size(HtmlInfoView::STANDARD_ICON_IMG_WIDTH, HtmlInfoView::STANDARD_ICON_IMG_HEIGHT);
+//    QPixmap * pixmap = FSvgRenderer::getPixmap(itemBase->renderer(), size);
+//    lwi->setIcon(QIcon(*pixmap));
+//    delete pixmap;
+//    lwi->setData(Qt::UserRole + 1, itemBase->renderer()->defaultSize());
 
-}
+//}
 
 //void MainWindow::addRecommendList(QList<QSharedPointer<ModelSet>> toModelsetList, QList<QSharedPointer<SetConnection>> setConnectionList){
 

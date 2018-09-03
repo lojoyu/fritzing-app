@@ -151,9 +151,11 @@ public:
 	SetConnection();
 	SetConnection(QSharedPointer<ModelSet> m1, QSharedPointer<ModelSet> m2);
 	~SetConnection();
+    QSharedPointer<SetConnection> clone();
 	void appendConnection2(long id1, long id2);
 	void appendConnection(QString name1, QString name2);
 	void appendConnection(QString name1, QString name2, QColor color);
+    void appendConnection(QString name1, QString name2, QColor color, bool changeColor);
 	QSharedPointer<ModelSet> getFromModelSet();
 	QSharedPointer<ModelSet> getToModelSet();
 	QList<ItemBase *> getWireList();
@@ -168,6 +170,7 @@ public:
     QList<QString> getConnectedTerminal(int ind);
     void insertWireConnection(ItemBase * item, long itemID1, QString connectorID1, long itemID2, QString connectorID2);
     QPair<ModelSet::Terminal, ModelSet::Terminal> getWireConnection(ItemBase* item);
+    void setModelSet(int ind, QSharedPointer<ModelSet> m);
 
 protected:
 	QSharedPointer<ModelSet> m_fromModelSet;

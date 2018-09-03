@@ -88,6 +88,7 @@ void SketchWidget::addToModelSet(QSharedPointer<ModelSet> modelSet, bool transpa
         modelSet->addBreadboardConnection(breadBoardSetConnection);
 
     if (!transparent || (modelSet->single() && breadBoardSetConnection.isNull())) {
+        if (!m_savedModelSet.contains(modelSet)) m_savedModelSet.append(modelSet);
         confirmSelect(modelSet);
     } else {
         m_prevModelSet = modelSet;
@@ -190,6 +191,7 @@ void SketchWidget::addSetConnection(QSharedPointer<SetConnection> setconnection,
 		setconnection->appendWireList(wire);
         //TODO: wire store which set connection it belongs to
 	}
+    if (!transparent) setconnection->setConfirm();
 
 }
 
@@ -257,7 +259,7 @@ void SketchWidget::addModelSet(QSharedPointer<ModelSet> modelSet, bool transpare
         //TODO: arduino
     }
     completeSuggestion(modelSet, transparent);
-    //if (!transparent) confirmSelect(modelSet);
+    if (!transparent) modelSet->setConfirm();
 
 }
 
@@ -278,6 +280,9 @@ void SketchWidget::deleteModelSet(QSharedPointer<ModelSet> modelSet) {
     if (modelSet.isNull()) return;
     QList<ItemBase *> itemList = modelSet->getItemList();
     foreach(ItemBase * itemBase, itemList) {
+        if (itemBase == modelSet->keyItem()) {
+            modelSet->setKeyItem(NULL);
+        }
         deleteItem(itemBase, true, false, false);
     }
     modelSet->emptyItemList();
@@ -291,8 +296,9 @@ void SketchWidget::deleteModelSet(QSharedPointer<ModelSet> modelSet) {
     deleteSetConnection(modelSet->breadboardConnection());
     if (modelSet != m_prevModelSet && !m_prevModelSet.isNull()) {
         deleteModelSet(m_prevModelSet);
-        m_prevModelSet.clear();
+
     }
+    m_prevModelSet.clear();
     if (m_savedModelSet.contains(modelSet)) {
         m_savedModelSet.removeOne(modelSet);
     }
@@ -339,11 +345,13 @@ void SketchWidget::removePrevModelSet() {
 //            }
 //            delete itemBase;
         }
-        removePrevSetConnection(true);
         //TODO: m_prevModelSet Key Item delete?
         m_prevModelSet->emptyItemList();
-        m_prevModelSet.clear();
+
     }
+    removePrevSetConnection(true);
+    m_prevModelSet.clear();
+
 
 }
 
@@ -840,3 +848,147 @@ void SketchWidget::setOpacity(QSharedPointer<SetConnection> setConnection) {
 QList<QSharedPointer<ModelSet>> SketchWidget::getSavedModelSets() {
     return m_savedModelSet;
 }
+
+
+bool SketchWidget::dragEnterEventFromRecommend(QDragEnterEvent * event) {
+    //DebugDialog::debug("list drag----------------------------------------------5");
+    if (!event->mimeData()->hasFormat("type/setToSet")) return false;
+    m_draggingSuggestion = true;
+    m_dragModelSet = m_prevModelSet;
+    //m_tempPoint = event->pos();
+    //updateModelSetPos(event->pos());
+
+//    QByteArray itemData = event->mimeData()->data("type/setToSet");
+//    QDataStream dataStream(&itemData, QIODevice::ReadOnly);
+//    //QSharedPointer<ModelSet> toModelset ;
+//    //QSharedPointer<SetConnection> setConnection ;
+//    DebugDialog::debug("list drag----------------------------------------------5");
+//    //QVariantList itemDataV ;
+//    int rowNumber ;
+//    dataStream >> rowNumber ;
+//    //dataStream >> toModelset >> setConnection;
+//    DebugDialog::debug("list drag----------------------------------------------6");
+//    //addSetToSet(m_toModelsetList[rowNumber],m_setConnectionList[rowNumber],false);
+//    DebugDialog::debug("list drag----------------------------------------------7");
+
+    return true;
+
+}
+
+bool SketchWidget::dragMoveEventFromRecommend(QDragMoveEvent * event) {
+
+    if (!event->mimeData()->hasFormat("type/setToSet")) return false;
+    DebugDialog::debug("in?");
+    updateModelSetPos(event->pos());
+    return true;
+}
+
+bool SketchWidget::dropEventFromRecommend(QDropEvent * event) {
+    DebugDialog::debug("dropEnter");
+    if (!event->mimeData()->hasFormat("type/setToSet")) return false;
+    //selectSetToSet(m_dragModelSet,  m_dragModelSet->setConnection(), false, false);
+    selectSetToSet(m_prevModelSet,  m_prevModelSet->setConnection(), false, false);
+
+}
+
+void SketchWidget::updateModelSetPos(QPoint pos) {
+
+    if (m_dragModelSet.isNull()) return;
+    QPointF mousePos = this->mapToScene(pos);
+
+    bool useOrigin = m_prevModelSet == m_dragModelSet ? false : true;
+    QSharedPointer<ModelSet> originModelSet;
+
+    foreach(QSharedPointer<ModelSet> modelset, m_savedModelSet) {
+        ItemBase * keyItem = modelset->keyItem();
+        QRectF itemRect = keyItem->boundingRect();
+        QPointF topLeft = keyItem->pos();
+        if (itemRect.contains(mousePos-topLeft) && m_dragModelSet->setId() == modelset->setId()) {
+            if (m_prevModelSet == modelset) break;
+            useOrigin = true;
+            originModelSet = modelset;
+            QSharedPointer<SetConnection> setConnection = m_dragModelSet->setConnection()->clone();
+            setConnection->setModelSet(1, originModelSet);
+            selectSetToSet(originModelSet, setConnection, false, true);
+            originModelSet->addSetConnection(setConnection);
+            //removePrevModelSet();
+            //m_dragModelSet = modelset;
+            break;
+        } else {
+            useOrigin = false;
+        }
+
+    }
+    DebugDialog::debug(QString("see! %1~~~~~~~~").arg(useOrigin));
+    if (useOrigin) return;
+
+    if (m_prevModelSet != m_dragModelSet) {
+
+        QSharedPointer<SetConnection> setConnection = m_prevModelSet->setConnection()->clone();
+        setConnection->setModelSet(1, m_dragModelSet);
+        selectSetToSet(m_dragModelSet, setConnection, false, true);
+        m_dragModelSet->addSetConnection(setConnection);
+
+    }
+    ItemBase * item = m_dragModelSet->keyItem();
+    if (!item) return;
+    QPointF oriPos = item->pos();
+    QPointF offset = mousePos - oriPos;
+
+    QList<ItemBase *> itemList = m_dragModelSet->getItemList();
+    //if (itemList.length() == 0) return;
+    foreach(ItemBase * item, itemList) {
+        item->setPos(this->mapToScene(pos));
+        //item->setPos(oriPos);
+    }
+
+    QSharedPointer<SetConnection> breadBoardConnection = m_dragModelSet->breadboardConnection();
+    if (breadBoardConnection) {
+        itemList = breadBoardConnection->getWireList();
+        //if (itemList.length() == 0) return;
+        foreach(ItemBase * item, itemList) {
+            Wire * wire = qobject_cast<Wire *>(item);
+            if (wire) {
+                QLineF oriLine = wire->line();
+                QLineF newLine(oriLine.x1(), oriLine.y1(), oriLine.x2()+offset.x(), oriLine.y2()+offset.y());
+                wire->setLine(newLine);
+            }
+        }
+    }
+
+    //setModelSet
+
+    QSharedPointer<SetConnection> setConnection = m_dragModelSet->setConnection();
+    if (setConnection == NULL) return;
+
+    QList<ItemBase *> wireList = setConnection->getWireList();
+    //if (itemList.length() == 0) return;
+    foreach(ItemBase * item, wireList) {
+        Wire * wire = qobject_cast<Wire *>(item);
+        if (wire) {
+            QPair<ModelSet::Terminal, ModelSet::Terminal> tpair = setConnection->getWireConnection(item);
+            ModelSet::Terminal from = tpair.first;
+            ModelSet::Terminal to = tpair.second;
+            if (from.label != "" && to.label != "") {
+                QLineF oriLine = wire->line();
+                QLineF newLine;
+                if (!useOrigin) {
+                    newLine = QLineF(oriLine.x1(), oriLine.y1(), oriLine.x2()+offset.x(), oriLine.y2()+offset.y());
+                } else {
+                    ItemBase * fromItem = setConnection->getFromModelSet()->getItem(from.label);
+                    ItemBase *  toItem = originModelSet->getItem(to.label);
+                    ConnectorItem * fromConnectorItem = fromItem->findConnectorItemWithSharedID(from.connectorID);
+                    ConnectorItem * toConnectorItem = toItem->findConnectorItemWithSharedID(to.connectorID);
+                    QPointF fromConnectorPos = fromConnectorItem->sceneAdjustedTerminalPoint(NULL);
+                    QPointF toConnectorPos = toConnectorItem->sceneAdjustedTerminalPoint(NULL);
+
+                    newLine = QLineF(oriLine.x1(), oriLine.y1(), -fromConnectorPos.x()+toConnectorPos.x(), -fromConnectorPos.y()+toConnectorPos.y());
+                }
+
+                wire->setLine(newLine);
+            }
+
+        }
+    }
+}
+

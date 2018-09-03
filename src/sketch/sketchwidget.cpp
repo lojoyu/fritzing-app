@@ -1834,7 +1834,9 @@ void SketchWidget::dragEnterEvent(QDragEnterEvent *event)
 		}
 		event->acceptProposedAction();
 	}
-	else {
+    else if (dragEnterEventFromRecommend(event)) {
+        event->acceptProposedAction();
+    } else {
 		// subclass seems to call acceptProposedAction so don't invoke it
 		// QGraphicsView::dragEnterEvent(event);
 		event->ignore();
@@ -1981,6 +1983,10 @@ void SketchWidget::dragMoveEvent(QDragMoveEvent *event)
 		return;
 	}
 
+    if (dragMoveEventFromRecommend(event)) {
+        event->acceptProposedAction();
+    }
+
 	//QGraphicsView::dragMoveEvent(event);   // we override QGraphicsView::dragEnterEvent so don't call the subclass dragMoveEvent here
 }
 
@@ -2054,6 +2060,9 @@ void SketchWidget::dropEvent(QDropEvent *event)
 		}
         event->acceptProposedAction();
 	}
+    else if (dropEventFromRecommend(event)) {
+        event->acceptProposedAction();
+    }
 	else {
 		QGraphicsView::dropEvent(event);
 	}

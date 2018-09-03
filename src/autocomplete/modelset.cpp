@@ -107,7 +107,6 @@ void ModelSet::setKeyItem(ItemBase * item) {
 
     if (item == NULL) {
         m_keyid = -1;
-        m_keyLabel = "";
         m_keyItem = NULL;
         return;
     }
@@ -347,6 +346,23 @@ SetConnection::~SetConnection() {
 
 }
 
+QSharedPointer<SetConnection> SetConnection::clone() {
+    QSharedPointer<SetConnection> setconnection = QSharedPointer<SetConnection>(new SetConnection(m_fromModelSet, m_toModelSet));
+    foreach(Connection c, m_connectionList) {
+        setconnection->appendConnection(c.fromTerminal, c.toTerminal, c.color, c.changeColor);
+    }
+    return setconnection;
+//    foreach(ItemBase * item, m_wireConnection.keys()) {
+//        QPair<LongStringPair, LongStringPair> pair = m_wireConnection[item];
+//        setconnection->insertWireConnection(item, pair);
+//    }
+}
+
+void SetConnection::setModelSet(int ind, QSharedPointer<ModelSet> m) {
+    if (ind == 0) m_fromModelSet = m;
+    else m_toModelSet = m;
+}
+
 void SetConnection::appendConnection2(long id1, long id2) {
     m_connectionList2.append(QPair<long, long>(id1, id2));
 }
@@ -358,6 +374,11 @@ void SetConnection::appendConnection(QString name1, QString name2) {
 
 void SetConnection::appendConnection(QString name1, QString name2, QColor color) {
     Connection c(name1, name2, color, true);
+    m_connectionList.append(c);
+}
+
+void SetConnection::appendConnection(QString name1, QString name2, QColor color, bool changeColor) {
+    Connection c(name1, name2, color, changeColor);
     m_connectionList.append(c);
 }
 
