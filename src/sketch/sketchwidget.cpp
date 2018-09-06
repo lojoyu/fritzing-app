@@ -2375,7 +2375,7 @@ void SketchWidget::mousePressEvent(QMouseEvent *event)
 
 	Wire * wire = dynamic_cast<Wire *>(item);
 	if ((event->button() == Qt::LeftButton) && (wire != NULL)) {
-		DebugDialog::debug("leftButton & wire");
+        //DebugDialog::debug("leftButton & wire");
 		if (canChainWire(wire) && wire->hasConnections()) {
 			if (canDragWire(wire) && ((event->modifiers() & altOrMetaModifier()) != 0)) {
 				prepDragWire(wire);

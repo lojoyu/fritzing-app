@@ -789,6 +789,7 @@ public:
     void deleteModelSet(QSharedPointer<ModelSet> modelSet);
     void deleteSetConnection(QSharedPointer<SetConnection> setConnection);
     void addToModelSet(QSharedPointer<ModelSet>, bool transparent);
+    void testWire();
 
 signals:
     void clearRecommendListSignal();
@@ -799,12 +800,13 @@ public slots:
     QSharedPointer<ModelSet> getMicrocontroller();
     void autocompleteInit();
 
+
 protected:
 	void addModelSet(QSharedPointer<ModelSet>, bool transparent);
     void addSetConnection(QSharedPointer<SetConnection> setconnection, bool transparent);
     ItemBase * addSetItem(QPointF pos, QString & toModuleID, bool transparent);
     ItemBase * addSetItem(ItemBase * fromItem, const QString & fromConnectorID, QString toModuleID, const QString & toConnectorID, bool transparent);
-    ItemBase * addSetWire(ItemBase * fromItem, const QString & fromConnectorID, ItemBase * toItem, const QString & toConnectorID, bool transparent);
+    ItemBase* addSetWire(ItemBase * fromItem, const QString & fromConnectorID, ItemBase * toItem, const QString & toConnectorID, bool transparent);
     void removePrevModelSet();
     void removePrevSetConnection(bool removeBreadboard);
     void checkMousePressSuggestion(QGraphicsItem * item);
@@ -826,6 +828,7 @@ protected:
     bool dragMoveEventFromRecommend(QDragMoveEvent * event);
     bool dropEventFromRecommend(QDropEvent * event);
     void updateModelSetPos(QPoint pos);
+    Wire* squareWire(ItemBase* wireItem);
 
 protected:
 	bool m_autoComplete;

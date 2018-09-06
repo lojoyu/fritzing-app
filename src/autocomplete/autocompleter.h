@@ -27,11 +27,13 @@ public:
 	static void test();
     static void getSuggestionConnection(QSharedPointer<ModelSet> fromModelset, ConnectorItem * fromConnectorItem, 
                 QSharedPointer<ModelSet> toModelSet, ConnectorItem * toConnectorItem, SketchWidget * sketchWidget);
+    static void getSuggestionConnection(QSharedPointer<ModelSet> fromModelset, QSharedPointer<ModelSet> toModelset,
+            QList<QPair<QString, QString>> stringpair, SketchWidget * sketchWidget);
     static void clearRecommend();
 
 signals:
     void addModelSetSignal(QList<QSharedPointer<ModelSet>>);
-    void addSetConnectionSignal(QList<QSharedPointer<ModelSet>>, QList<QSharedPointer<SetConnection>> setConnectionList, QList<QList<QString> *> tutorialList);
+    void addSetConnectionSignal(QList<QSharedPointer<ModelSet>>, QList<QSharedPointer<SetConnection>> setConnectionList, QList<QList<QString> *> tutorialList, bool connection);
     void clearRecommendListSignal();
 
 protected:
@@ -40,7 +42,9 @@ protected:
     void getSuggestionExistSelf(QSharedPointer<ModelSet> modelset, SketchWidget * sketchWidget);
     void getSuggestionConnectionSelf(QSharedPointer<ModelSet> fromModelset, ConnectorItem * fromConnectorItem, 
                 QSharedPointer<ModelSet> toModelSet, ConnectorItem * toConnectorItem, SketchWidget * sketchWidget);
-	QString getModuleID(QString title, SketchWidget * sketchWidget);
+    void getSuggestionConnectionSelf(QSharedPointer<ModelSet> fromModelset, QSharedPointer<ModelSet> toModelset,
+            QList<QPair<QString, QString>> stringpair, SketchWidget * sketchWidget);
+    QString getModuleID(QString title, SketchWidget * sketchWidget);
     QString getModuleIDByTitle(QString title, SketchWidget * sketchWidget);
     QString findRestModuleID(QString title);
     void mapListToModelSet(ItemBase * keyItem, SketchWidget * sketchWidget, QList<QMap<QString, QVariant> *> & resultList, QList<QSharedPointer<ModelSet>> & modelSetList);

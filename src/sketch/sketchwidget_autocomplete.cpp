@@ -8,10 +8,12 @@
 #include "../connectors/connectoritem.h"
 #include "../waitpushundostack.h"
 #include "../items/wire.h"
+#include "../utils/bezier.h"
 
 typedef QPair<long, long> LongLongPair;
 typedef QPair<QString, QString> StringPair;
 typedef QPair<ModelSet::Terminal, QString> TerminalStringPair;
+typedef QPair<ItemBase*, QString> ItemBaseStringPair;
 
 void SketchWidget::setAutoComplete(bool autoComplete) {
 	m_autoComplete = autoComplete;
@@ -29,11 +31,108 @@ void SketchWidget::autocompleteInit() {
     m_breadBoardModelSet->setKeyItem(m_addedDefaultPart);
     foreach(ConnectorItem * connectorItem, m_addedDefaultPart->cachedConnectorItems()) {
         DebugDialog::debug(QString("---%1").arg(connectorItem->connectorSharedID()));
-        ModelSet::Terminal t1 = ModelSet::Terminal(moduleID, title, label, connectorItem->connectorSharedID(), "");
-        ModelSet::Terminal t2 = ModelSet::Terminal("NULL", "NULL", "NULL", "NULL", "");
+        ModelSet::Terminal t1 = ModelSet::Terminal(moduleID, title, label, connectorItem->connectorSharedID(), "", "");
+        ModelSet::Terminal t2 = ModelSet::Terminal("NULL", "NULL", "NULL", "NULL", "", "");
         m_breadBoardModelSet->appendConnection(t1, t2);
         m_breadBoardModelSet->insertTerminalnameHash(connectorItem->connectorSharedID(), t1);
     }
+
+}
+
+void SketchWidget::testWire() {
+
+    ModelPart * wirePart = m_referenceModel->retrieveModelPart(QString("WireModuleID"));
+    long wireID = ItemBase::getNextID();
+    ViewGeometry viewGeometryWire;
+    QLineF line;
+    line.setLine(0, 0, 100, 100);
+
+    viewGeometryWire.setLoc(QPointF(30, 50));
+    viewGeometryWire.setLine(line);
+    ItemBase * wireItem = addItemAuxTemp(wirePart, defaultViewLayerPlacement(wirePart), viewGeometryWire, wireID, true, m_viewID, true);
+
+
+    Wire * wire = qobject_cast<Wire *>(wireItem);
+    wire->setColor(QColor(255, 0, 0), 1);
+
+
+    wire->saveGeometry();
+    ViewGeometry vg = wire->getViewGeometry();
+
+    QPointF oldPos = wire->pos();
+    QLineF oldLine = wire->line();
+    QPointF newPos = QPointF(oldLine.p1().x(), oldLine.p2().y())+oldPos;
+
+    Bezier left, right;
+    bool curved = wire->initNewBendpoint(newPos, left, right);
+    QLineF newLine(oldLine.p1(), newPos - oldPos);
+    wire->setLine(newLine);
+
+    //if (curved) wire->changeCurve(&left);
+    vg.setLoc(newPos);
+
+    QLineF newLine2(QPointF(0,0), oldLine.p2() + oldPos - newPos);
+    vg.setLine(newLine2);
+
+    ConnectorItem * oldConnector1 = wire->connector1();
+    Wire * newWire = this->createTempWireForDragging(wire, wire->modelPart(), oldConnector1, vg, wire->viewLayerPlacement());
+//    if (curved) {
+//        right.translateToZero();
+//        newWire->changeCurve(&right);
+//    }
+    ConnectorItem * newConnector1 = newWire->connector1();
+    foreach (ConnectorItem * toConnectorItem, oldConnector1->connectedToItems()) {
+        oldConnector1->tempRemove(toConnectorItem, false);
+        toConnectorItem->tempRemove(oldConnector1, false);
+        newConnector1->tempConnectTo(toConnectorItem, false);
+        toConnectorItem->tempConnectTo(newConnector1, false);
+    }
+    oldConnector1->tempConnectTo(newWire->connector0(), false);
+    newWire->connector0()->tempConnectTo(oldConnector1, false);
+
+}
+
+Wire * SketchWidget::squareWire(ItemBase* wireItem) {
+    Wire * wire = qobject_cast<Wire *>(wireItem);
+    if (!wire) return NULL;
+
+    wire->saveGeometry();
+    ViewGeometry vg = wire->getViewGeometry();
+
+    QPointF oldPos = wire->pos();
+    QLineF oldLine = wire->line();
+    QPointF newPos = QPointF(oldLine.p1().x(), oldLine.p2().y())+oldPos;
+
+    Bezier left, right;
+    bool curved = wire->initNewBendpoint(newPos, left, right);
+    QLineF newLine(oldLine.p1(), newPos - oldPos);
+    wire->setLine(newLine);
+
+    //if (curved) wire->changeCurve(&left);
+    vg.setLoc(newPos);
+
+    QLineF newLine2(QPointF(0,0), oldLine.p2() + oldPos - newPos);
+    vg.setLine(newLine2);
+
+    ConnectorItem * oldConnector1 = wire->connector1();
+    Wire * newWire = createTempWireForDragging(wire, wire->modelPart(), oldConnector1, vg, wire->viewLayerPlacement());
+//    if (curved) {
+//        right.translateToZero();
+//        newWire->changeCurve(&right);
+//    }
+    ConnectorItem * newConnector1 = newWire->connector1();
+    foreach (ConnectorItem * toConnectorItem, oldConnector1->connectedToItems()) {
+        oldConnector1->tempRemove(toConnectorItem, false);
+        toConnectorItem->tempRemove(oldConnector1, false);
+        newConnector1->tempConnectTo(toConnectorItem, false);
+        toConnectorItem->tempConnectTo(newConnector1, false);
+    }
+    oldConnector1->tempConnectTo(newWire->connector0(), false);
+    newWire->connector0()->tempConnectTo(oldConnector1, false);
+    newWire->initDragEnd(newWire->connector0(), newPos);
+
+
+    return newWire;
 }
 
 void SketchWidget::selectModelSet(QSharedPointer<ModelSet> modelSet, bool transparent) {
@@ -47,7 +146,7 @@ void SketchWidget::selectModelSet(QSharedPointer<ModelSet> modelSet, bool transp
 
 void SketchWidget::selectSetToSet(QSharedPointer<ModelSet> modelSet, QSharedPointer<SetConnection> setconnection, bool confirmSetConnection, bool transparent) {
     if (transparent) addSetToSet(modelSet, setconnection, confirmSetConnection, transparent);
-    else if (modelSet->isConfirm()) {
+    else if (confirmSetConnection) {
         newAddSetConnectionCommand(setconnection, NULL);
     } else {
         QUndoCommand* parentCommand = new TemporaryCommand(tr("Add modelSet / Connection %1").arg(modelSet->keyTitle()));
@@ -119,7 +218,8 @@ void SketchWidget::addSetToSet(QSharedPointer<ModelSet> modelSet, QSharedPointer
         //TODO: if modelset is breadboard
         QSharedPointer<ModelSet> fromModelSet = setconnection->getFromModelSet();
         QSharedPointer<ModelSet> toModelSet = setconnection->getToModelSet();
-        AutoCompleter::getSuggestionConnection(fromModelSet, NULL, toModelSet, NULL, this);
+        QList<QPair<QString, QString>> connectedPair = fromModelSet->getConnectedPairWithModelSet(toModelSet);
+        AutoCompleter::getSuggestionConnection(fromModelSet, toModelSet, connectedPair, this);
     } else {
         m_prevModelSet = modelSet;
     }
@@ -145,17 +245,20 @@ void SketchWidget::addSetConnection(QSharedPointer<SetConnection> setconnection,
 
 	QList<SetConnection::Connection> connectionList = setconnection->getConnectionList();
     foreach(SetConnection::Connection c, connectionList) {
-        QPair<ItemBase *, QString> p1 = from->getItemAndCID(c.fromTerminal);
         QPair<ItemBase *, QString> p2;
-        QList<QPair<ModelSet::Terminal, QString>> pintypeT = to->getPinTypeTerminal(c.toTerminal);
-        QList<QPair<ModelSet::Terminal, QString>> breadboardT = m_breadBoardModelSet->getPinTypeTerminal(c.toTerminal);
+        QString toPintype = to->getPinType(c.toTerminal);
+        QList<QPair<ModelSet::Terminal, QString>> pintypeT = to->getPinTypeTerminal(toPintype);
+        QList<QPair<ModelSet::Terminal, QString>> breadboardT = m_breadBoardModelSet->getPinTypeTerminal(toPintype);
+
+        QList<QPair<ItemBase *, QString>> p2List;
         if (to->isMicrocontroller() && breadboardT.length() > 0 && from != m_breadBoardModelSet) {
             ModelSet::Terminal t = breadboardT[0].first;
             QString vccConnectorID = t.connectorID;
             QList<QString> vccConnectorIDList;
             vccConnectorIDList.append(vccConnectorID);
             vccConnectorID = findBreadBoardUnused(vccConnectorIDList, vccConnectorIDList, false);
-            p2 = QPair<ItemBase *, QString>(m_addedDefaultPart, vccConnectorID);
+            p2 = QPair<ItemBase *, QString>(m_breadBoardModelSet->keyItem(), vccConnectorID);
+            p2List.append(p2);
         } else if (to->isMicrocontroller() && pintypeT.length() > 0 && from != m_breadBoardModelSet) {
 
             QString connectorID = pintypeT[0].first.connectorID;
@@ -171,25 +274,46 @@ void SketchWidget::addSetConnection(QSharedPointer<SetConnection> setconnection,
                 }
             }
             p2 = QPair<ItemBase *, QString>(to->keyItem(), connectorID);
+            p2List.append(p2);
 
-        } else {
+        } else if (to->isMicrocontroller() || from != m_breadBoardModelSet) {
             p2 = to->getItemAndCID(c.toTerminal);
+            p2List.append(p2);
+        } else {
+            p2List = to->getItemAndCIDAll(c.toTerminal);
+            if (p2List.length() > 0) p2 = p2List[0];
+            else p2 = QPair<ItemBase*, QString>();
         }
+        QPair<ItemBase *, QString> p1 = from->getItemAndCID(c.fromTerminal);
 
         if (p1.first == NULL|| p2.first == NULL || p1.second == "" ||  p2.second == "") continue;
         DebugDialog::debug(QString("p1: %1").arg(p1.first->title()));
         DebugDialog::debug(QString("p2: %1").arg(p2.first->title()));
-        ItemBase * wire = addSetWire(p1.first, p1.second, p2.first, p2.second, transparent);
-        if (wire == NULL) continue;
-        if (c.changeColor) {
-            Wire * w = qobject_cast<Wire *>(wire);
-            w->setColor(c.color, 1);
+
+        //TODO: change wire connection;
+
+        foreach(ItemBaseStringPair p, p2List) {
+            ItemBase * wire = addSetWire(p1.first, p1.second, p.first, p.second, transparent);
+            if (!wire) continue;
+            //Wire * newW = squareWire(wire);
+            //if (!newW) continue;
+            //ItemBase * newWire = qobject_cast<ItemBase *>(newW);
+            if (c.changeColor) {
+                Wire * w = qobject_cast<Wire *>(wire);
+                w->setColor(c.color, 1);
+                //newW->setColor(c.color, 1);
+            }
+            //p1.first(item) -> id?, p1.second
+            wire->setModelSet(to);
+            //newWire->setOpacity(wire->opacity());
+            //newWire->setModelSet(to);
+            setconnection->insertWireConnection(wire, p1.first->id(), p1.second, p.first->id(), p.second);
+            //setconnection->insertWireConnection(wire, );
+            setconnection->appendWireList(wire);
+            //setconnection->appendWireList(newWire);
+            //TODO: wire store which set connection it belongs to
         }
-        //p1.first(item) -> id?, p1.second
-        wire->setModelSet(to);
-        setconnection->insertWireConnection(wire, p1.first->id(), p1.second, p2.first->id(), p2.second);
-		setconnection->appendWireList(wire);
-        //TODO: wire store which set connection it belongs to
+
 	}
     if (!transparent) setconnection->setConfirm();
 
@@ -218,7 +342,8 @@ void SketchWidget::addModelSet(QSharedPointer<ModelSet> modelSet, bool transpare
         ModelSet::Terminal to = c.second;
         ItemBase * fromItem = modelSet->getItem(modelSet->genLabelHashKey(from));
         if (fromItem == NULL) {
-            if (from.title == "Arduino Uno (Rev3)") m_tempPoint = QPointF(100, 300);
+            if (modelSet->isMicrocontroller() && from.moduleID == modelSet->keyModuleID())
+                m_tempPoint = QPointF(100, 300);
             fromItem = addSetItem(m_tempPoint, from.moduleID, transparent);
 
             if (fromItem == NULL) {
@@ -249,13 +374,25 @@ void SketchWidget::addModelSet(QSharedPointer<ModelSet> modelSet, bool transpare
 
         }
 
+        //TODO: don't wire if vcc/ gnd
+        if (from.type == to.type && (ModelSet::pinEqual("GND", from.type) != "" || ModelSet::pinEqual("VCC", from.type) != ""))
+            continue;
+
         DebugDialog::debug(QString("from: %1, to: %2").arg(fromItem->title()).arg(toItem->title()));
         ItemBase * wire = addSetWire(fromItem, from.connectorID, toItem, to.connectorID, transparent);
-        if (wire == NULL) continue;
+        if (!wire) continue;
+        //Wire * newW = squareWire(wire);
+        //if (!newW) continue;
+        //ItemBase * newWire = qobject_cast<ItemBase *>(newW);
+
         wire->setModelSet(modelSet);
+        //newWire->setModelSet(modelSet);
+        //newWire->setOpacity(wire->opacity());
         modelSet->insertWireConnection(wire, QPair<ModelSet::Terminal, ModelSet::Terminal>(from, to));
+        //modelSet->insertWire
         //Wire * w = qobject_cast<Wire *>(wire);
         modelSet->addItem(wire);
+        //modelSet->addItem(newWire);
         //TODO: arduino
     }
     completeSuggestion(modelSet, transparent);
@@ -380,7 +517,7 @@ void SketchWidget::removePrevSetConnection(bool removeBreadboard) {
 
 }
 
-ItemBase * SketchWidget::addSetWire(ItemBase * fromItem, const QString & fromConnectorID, ItemBase * toItem, const QString & toConnectorID, bool transparent) {
+ItemBase* SketchWidget::addSetWire(ItemBase * fromItem, const QString & fromConnectorID, ItemBase * toItem, const QString & toConnectorID, bool transparent) {
     //DebugDialog::debug(QString("%1").arg(fromItem->title()));
     // ItemBase * itemBase = findItem(fromItem->id());
     // if (itemBase == NULL) {
@@ -505,6 +642,7 @@ void SketchWidget::getSuggestionConnection(Wire *wire, ConnectorItem * to) {
     if (to == NULL) return;
 
     ConnectorItem * toConnectorItem = NULL;
+    DebugDialog::debug(QString("to : %1").arg(to->attachedTo()->title()));
     if (to->attachedTo() != m_breadBoardModelSet->keyItem()) {
         toConnectorItem = to;
     } else {
@@ -539,7 +677,15 @@ void SketchWidget::getSuggestionConnection(Wire *wire, ConnectorItem * to) {
     QSharedPointer<ModelSet> toModelSet = toConnectorItem->attachedTo()->modelSet();
     if (fromModelSet.isNull() || toModelSet.isNull()) return;
 
-    AutoCompleter::getSuggestionConnection(fromModelSet, fromConnectorItem, toModelSet, toConnectorItem, this);
+    //QSharedPointer<SetConnection> setconnection = getSetConnectionWithModelSet(QSharedPointer<ModelSet> modelset);
+    QSharedPointer<SetConnection> setconnection = QSharedPointer<SetConnection>(new SetConnection(fromModelSet, toModelSet));
+    QString fromName = fromModelSet->getTerminalName(fromConnectorItem->attachedTo()->moduleID(), fromConnectorItem->connectorSharedID());
+    QString toName = toModelSet->getTerminalName(toConnectorItem->attachedTo()->moduleID(), toConnectorItem->connectorSharedID());
+    setconnection->appendConnection(fromName, toName);
+    fromModelSet->appendSetConnectionList(0, setconnection);
+    toModelSet->appendSetConnectionList(1, setconnection);
+    QList<QPair<QString, QString>> connectedPair = fromModelSet->getConnectedPairWithModelSet(toModelSet);
+    AutoCompleter::getSuggestionConnection(fromModelSet, toModelSet, connectedPair, this);
 
 }
 
@@ -548,23 +694,39 @@ ConnectorItem * SketchWidget::findConnectorItemTo(ConnectorItem * connectorItem,
     QList<ConnectorItem *> exclude;
     if (excludeConnector != NULL) exclude.append(excludeConnector);
     ConnectorItem * under = connectorItem->findConnectorUnder(true, true, exclude, false, NULL);
-    if (under == NULL) return NULL;
-
-    if (under->attachedTo() == m_breadBoardModelSet->keyItem()) {
-        QList<ConnectorItem *> connectorItems;
-        connectorItems.append(connectorItem);
-        ConnectorItem::collectEqualPotential(connectorItems, true, ViewGeometry::NoFlag);
-        foreach(ConnectorItem * citem, connectorItems) {
-            ItemBase * item = citem->attachedTo();
-            QString s = citem->attachedTo()->title();
-            if (item != m_breadBoardModelSet->keyItem() && item != connectorItem->attachedTo()) {
-                fromConnectorItem = citem;
-                //break;
-            }
+    //if (under) {
+    QList<ConnectorItem *> connectorItems;
+    connectorItems.append(connectorItem);
+    ConnectorItem::collectEqualPotential(connectorItems, true, ViewGeometry::NoFlag);
+    foreach(ConnectorItem * citem, connectorItems) {
+        ItemBase * item = citem->attachedTo();
+        QString s = citem->attachedTo()->title();
+        if (item != m_breadBoardModelSet->keyItem() && item != connectorItem->attachedTo()) {
+            fromConnectorItem = citem;
+            //break;
         }
-    } else {
-        fromConnectorItem = under;
     }
+    //}
+   // under = connectorItem;
+
+
+
+
+//    if (under->attachedTo() == m_breadBoardModelSet->keyItem()) {
+//        QList<ConnectorItem *> connectorItems;
+//        connectorItems.append(connectorItem);
+//        ConnectorItem::collectEqualPotential(connectorItems, true, ViewGeometry::NoFlag);
+//        foreach(ConnectorItem * citem, connectorItems) {
+//            ItemBase * item = citem->attachedTo();
+//            QString s = citem->attachedTo()->title();
+//            if (item != m_breadBoardModelSet->keyItem() && item != connectorItem->attachedTo()) {
+//                fromConnectorItem = citem;
+//                //break;
+//            }
+//        }
+//    } else {
+//        fromConnectorItem = under;
+//    }
     return fromConnectorItem;
 
 }
@@ -627,17 +789,60 @@ void SketchWidget::completeSuggestion(QSharedPointer<ModelSet> modelset, bool tr
                     }
                 }
                 //setconnection->appendConnection(vccPair.first.connectorID, vccConnectorID, QColor(255, 0, 0));
-                setconnection->appendConnection(vccConnectorID, vccPair.second, QColor(255, 0, 0));
+                setconnection->appendConnection(vccConnectorID, vccPair.first.name, QColor(255, 0, 0));
                 m_breadBoardModelSet->insertTerminalType(vccConnectorID, "VCC");
                 m_breadBoardModelSet->insertTerminalType(vccConnectorID, vccPair.second);
             }
             if (gndT.length() > 0 && gndConnectorID!="") {
-                setconnection->appendConnection(gndConnectorID, gndT[0].second,  QColor(0, 0, 0));
+                setconnection->appendConnection(gndConnectorID, gndT[0].first.name,  QColor(0, 0, 0));
                 //setconnection->appendConnection(gndT[0].first.connectorID, gndConnectorID, QColor(0, 0, 0));
                 m_breadBoardModelSet->insertTerminalType(gndConnectorID, gndT[0].second);
             }
             modelset->addBreadboardConnection(setconnection);
         }
+
+    } else {
+        setconnection = QSharedPointer<SetConnection>(new SetConnection(m_breadBoardModelSet, modelset));
+        foreach (TerminalStringPair pair, vccT) {
+            QList<QPair<ModelSet::Terminal, QString>> breadboardT = m_breadBoardModelSet->getPinTypeTerminal(pair.second);
+            QList<QString> vccConnectorIDList;
+            if (breadboardT.length() > 0) {
+                ModelSet::Terminal t = breadboardT[0].first;
+                vccConnectorIDList.append(t.connectorID);
+            } else {
+                vccConnectorIDList.append("pin3W");
+                vccConnectorIDList.append("pin3Y");
+            }
+            QString vccConnectorID = findBreadBoardUnused(vccConnectorIDList, vccConnectorIDList, false);
+            //ItemBase * wire = addSetWire(modelset->getItem(pair.first.label), pair.first.connectorID, m_breadBoardModelSet->keyItem(), vccConnectorID, transparent);
+            setconnection->appendConnection(vccConnectorID, pair.first.name, QColor(255, 0, 0));
+            m_breadBoardModelSet->insertTerminalType(vccConnectorID, "VCC");
+            m_breadBoardModelSet->insertTerminalType(vccConnectorID, pair.second);
+
+//            ModelSet::Terminal t = modelset->getConnectedTerminal(pair.first);
+//            if (t.label != "") {
+//                setconnection->appendConnection(vccConnectorID, t.name, QColor(255, 0, 0));
+//                //ItemBase * wire = addSetWire(modelset->getItem(pair.first.label), pair.first.connectorID, m_breadBoardModelSet->keyItem(), vccConnectorID, transparent);
+//            }
+            //pair.first.
+        }
+
+        foreach (TerminalStringPair pair, gndT) {
+            QList<QPair<ModelSet::Terminal, QString>> breadboardT = m_breadBoardModelSet->getPinTypeTerminal(pair.second);
+            QList<QString> gndConnectorIDList;
+            if (breadboardT.length() > 0) {
+                ModelSet::Terminal t = breadboardT[0].first;
+                gndConnectorIDList.append(t.connectorID);
+            } else {
+                gndConnectorIDList.append("pin3X");
+                gndConnectorIDList.append("pin3Z");
+            }
+            QString gndConnectorID = findBreadBoardUnused(gndConnectorIDList, gndConnectorIDList, false);
+            //ItemBase * wire = addSetWire(modelset->getItem(pair.first.label), pair.first.connectorID, m_breadBoardModelSet->keyItem(), gndConnectorID, transparent);
+            setconnection->appendConnection(gndConnectorID, pair.first.name, QColor(0, 0, 0));
+            m_breadBoardModelSet->insertTerminalType(gndConnectorID, pair.second);
+        }
+        if (vccT.length() + gndT.length() > 0) modelset->addBreadboardConnection(setconnection);
 
     }
 //    if (!setconnection.isNull()) {
@@ -741,7 +946,7 @@ void SketchWidget::checkSelectSuggestion() {
             selectModelSet(m_pressModelSet, false);
         } else {
             //complete module to module
-            selectSetToSet(m_pressModelSet, setConnection, true, false);
+            selectSetToSet(m_pressModelSet, setConnection, false, false);
         }
     } else {
         if (!setConnection.isNull()) {

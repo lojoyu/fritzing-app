@@ -27,8 +27,8 @@ RecommendListWidget::RecommendListWidget(SketchWidget * sketchWidget, QPointer<R
 
     connect(autocompleter, SIGNAL(addModelSetSignal(QList<QSharedPointer<ModelSet>>)),
                        this, SLOT(setModelSetList(QList<QSharedPointer<ModelSet>>)));
-    connect(autocompleter, SIGNAL(addSetConnectionSignal(QList<QSharedPointer<ModelSet>>, QList<QSharedPointer<SetConnection>>, QList<QList<QString> *>)),
-                       this, SLOT(setTosetList(QList<QSharedPointer<ModelSet>>, QList<QSharedPointer<SetConnection>>, QList<QList<QString> *>))) ;
+    connect(autocompleter, SIGNAL(addSetConnectionSignal(QList<QSharedPointer<ModelSet>>, QList<QSharedPointer<SetConnection>>, QList<QList<QString> *>, bool)),
+                       this, SLOT(setTosetList(QList<QSharedPointer<ModelSet>>, QList<QSharedPointer<SetConnection>>, QList<QList<QString> *>, bool))) ;
 
     connect(autocompleter, SIGNAL(clearRecommendListSignal()), this, SLOT(clearList()));
 }
@@ -95,6 +95,7 @@ void RecommendListWidget::onItemEvent(QListWidgetItem* listitem, bool hover) {
     if (type == SuggestionType::toModelSet) {
         m_sketchwidget->selectModelSet(itemDataV[1].value<QSharedPointer<ModelSet>>(), hover);
     } else {
+        bool connection = type == SuggestionType::setToSet ? false : true;
         QVariantList tList = itemDataV[3].value<QVariantList>();
         m_tutorial->clear();
 
@@ -111,7 +112,7 @@ void RecommendListWidget::onItemEvent(QListWidgetItem* listitem, bool hover) {
 
         }
 
-        m_sketchwidget->selectSetToSet(itemDataV[1].value<QSharedPointer<ModelSet>>(), itemDataV[2].value<QSharedPointer<SetConnection>>(), false, hover) ;
+        m_sketchwidget->selectSetToSet(itemDataV[1].value<QSharedPointer<ModelSet>>(), itemDataV[2].value<QSharedPointer<SetConnection>>(), connection&!hover, hover) ;
     }
 
 }
@@ -121,7 +122,8 @@ void RecommendListWidget::onItemEnteredSlot(QListWidgetItem* listitem){
     return;
 }
 
-void RecommendListWidget::setTosetList(QList<QSharedPointer<ModelSet>> toModelsetList, QList<QSharedPointer<SetConnection>> setConnectionList, QList<QList<QString> *> tutorialLink){
+void RecommendListWidget::setTosetList(QList<QSharedPointer<ModelSet>> toModelsetList, QList<QSharedPointer<SetConnection>> setConnectionList,
+                                       QList<QList<QString> *> tutorialLink, bool connection){
 
     //m_recommendlist->clear();
     clear();
@@ -129,7 +131,8 @@ void RecommendListWidget::setTosetList(QList<QSharedPointer<ModelSet>> toModelse
         //QListWidgetItem* item = new QListWidgetItem(QString("%1 recommend").arg(i+1));
         QListWidgetItem* item = new QListWidgetItem();
         QVariantList itemData;
-        itemData.append(QVariant(SuggestionType::setToSet));
+        if (!connection) itemData.append(QVariant(SuggestionType::setToSet));
+        else itemData.append(QVariant(SuggestionType::connection));
         itemData.append(QVariant::fromValue(toModelsetList[i]));
         itemData.append(QVariant::fromValue(setConnectionList[i]));
         QVariantList variantList;
@@ -147,12 +150,13 @@ void RecommendListWidget::setTosetList(QList<QSharedPointer<ModelSet>> toModelse
         //m_recommendlist->insertItem(i, item) ;
         insertItem(i, item);
 
-        QLabel * label = new QLabel();
+        //QLabel * label = new QLabel();
+        /*
         label->setAlignment(Qt::AlignCenter);
         label->setText("<a href=\"https://github.com/lojoyu/fritzing-app\">github");
-        label->setOpenExternalLinks(true);
+        label->setOpenExternalLinks(true);*/
         //m_recommendlist->setItemWidget(m_recommendlist->item(i),label);
-        setItemWidget(this->item(i), label);
+        //setItemWidget(this->item(i), label);
     }
 }
 

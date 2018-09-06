@@ -22,7 +22,8 @@ class RecommendListWidget : public QListWidget {
 public:
     enum SuggestionType {
         toModelSet,
-        setToSet
+        setToSet,
+        connection
     };
     RecommendListWidget(SketchWidget * sketchWidget, QPointer<ReferenceModel> referenceModel,
                         QListWidget * tutorialList, QWidget *parent = 0);
@@ -36,7 +37,7 @@ public slots:
     void onItemEnteredSlot(QListWidgetItem*);
     void onItemClickedSlot(QListWidgetItem*);
 
-    void setTosetList(QList<QSharedPointer<ModelSet>> toModelsetList, QList<QSharedPointer<SetConnection>> setConnectionList, QList<QList<QString> *> tutorialLink);
+    void setTosetList(QList<QSharedPointer<ModelSet>> toModelsetList, QList<QSharedPointer<SetConnection>> setConnectionList, QList<QList<QString> *> tutorialLink, bool connection);
     void setModelSetList(QList<QSharedPointer<ModelSet>> modelSetList);
     void clearList();
 

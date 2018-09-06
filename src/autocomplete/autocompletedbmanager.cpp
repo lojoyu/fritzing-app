@@ -168,7 +168,7 @@ AutocompleteDBManager::getNextSet(QString title) {
 QList<QMap<QString, QVariant> *> AutocompleteDBManager::selectModelSet(QString moduleID) {
     
     QList<QMap<QString, QVariant> *> resultList;
-    QString queryStr = QString("SELECT mc.* FROM %1 mc "
+    QString queryStr = QString("SELECT m.mcu_or_bat, mc.* FROM %1 mc "
     "INNER JOIN %2 m "
     "ON mc.%3=m.id "
     "INNER JOIN %4 c "
@@ -389,7 +389,7 @@ QList<QMap<QString, QVariant> *> AutocompleteDBManager::selectModelSetsByID(QLis
 //    "WHERE module_id IN (%1) "
 //    "ORDER BY %2").arg(valueStr).arg(orderStr);
 
-    QString queryStr = QString("SELECT c.module_fid, mc.* FROM modules_components mc "
+    QString queryStr = QString("SELECT c.module_fid, m.mcu_or_bat, mc.* FROM modules_components mc "
     "INNER JOIN modules m ON m.id=mc.module_id "
     "INNER JOIN components c ON c.id=m.component_id "
     "WHERE mc.module_id IN (%1) "
@@ -482,42 +482,42 @@ QList<QMap<QString, QVariant> *> AutocompleteDBManager::selectConnectionsBetween
     QList<QMap<QString, QVariant> *> mapList;
 
     QString valueStr = "";
+    QString concatStr = "";
+    QString excludeStr = "";
     int ind = 1;
-    // foreach(StringPair s, includePair) {
-    //     if (ind != 1) {
-    //         valueStr += ",";
-    //     }
-    //     valueStr += QString("('%1', '%2')").arg(s.first).arg(s.second);
-    //     ind++;
-    // }
     foreach(StringPair s, includePair) {
         if (ind != 1) {
             valueStr += " OR ";
+            excludeStr += " OR ";
         } else {
             valueStr += "WHERE ";
+            excludeStr += "AND NOT (";
         }
         valueStr += QString("terminal_id='%1' AND to_terminal_id='%2'").arg(s.first).arg(s.second);
+        excludeStr += QString("tc.terminal_id='%1' AND tc.to_terminal_id='%2'").arg(s.first).arg(s.second);
+        concatStr += QString("AND x.con like '%-%1%2-%' ").arg(s.first).arg(s.second);
         ind++;
     }
+    if (excludeStr != "") excludeStr += ")";
+
+//    QString queryStr = QString("SELECT c.*, tc.* FROM terminals_connections tc "
+//    "INNER JOIN connections c "
+//    "ON c.id = tc.connection_id AND c.id IN "
+//    "(SELECT DISTINCT(connection_id) FROM terminals_connections "
+//    "%3) "
+//    "WHERE c.module_id = %1 AND c.to_module_id = %2 %4 "
+//    "ORDER BY c.count DESC, c.id").arg(mid1).arg(mid2).arg(valueStr).arg(excludeStr);
+
 
     QString queryStr = QString("SELECT c.*, tc.* FROM terminals_connections tc "
-    "INNER JOIN connections c "
-    "ON c.id = tc.connection_id AND c.id IN "
-    "(SELECT DISTINCT(connection_id) FROM terminals_connections "
-    "%3) "
-    "WHERE c.module_id = %1 AND c.to_module_id = %2 "
-    "ORDER BY c.count DESC, c.id").arg(mid1).arg(mid2).arg(valueStr);
+    "INNER JOIN connections c ON c.id = tc.connection_id "
+    "INNER JOIN "
+    "( SELECT DISTINCT(connection_id), group_concat('-' || terminal_id || to_terminal_id || '-', ', ') as con "
+    "FROM terminals_connections group by connection_id ) x "
+    "ON c.id = x.connection_id %3 "
+    "WHERE c.module_id = %1 AND c.to_module_id = %2 %4"
+    "ORDER BY c.count DESC, c.id").arg(mid1).arg(mid2).arg(concatStr).arg(excludeStr);
 
-    // queryStr = QString("SELECT DISTINCT(connection_id) FROM terminals_connections "
-    //  "WHERE (terminal_id, to_terminal_id) IN (VALUES%1)").arg(valueStr);
-
-    // (SELECT DISTINCT(tc.connection_id) FROM terminals_connections tc 
-    // JOIN (VALUES %3) AS x (terminal_id, to_terminal_id)
-    // ON  x.terminal_id = tc.terminal_id AND x.to_terminal_id = tc.to_terminal_id) ;
-
-    // select id1 + id2 as FullKey, *
-    // from players
-    // where FullKey in ('11','12','13')
 
     DebugDialog::debug(QString("queryString : %1").arg(queryStr));
 

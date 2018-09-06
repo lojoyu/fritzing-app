@@ -30,14 +30,16 @@ public:
 		QString label;
 		QString connectorID;
 		QString type;
+        QString name;
 
-		Terminal():Terminal("", "", "", "", "") {};
-        Terminal(QString mid, QString t, QString l, QString cid, QString ty) {
+        Terminal():Terminal("", "", "", "", "", "") {};
+        Terminal(QString mid, QString t, QString l, QString cid, QString ty, QString n) {
 			moduleID = mid;
 			title = t;
 			label = l;
 			connectorID = cid;
             type = ty;
+            name = n;
 		} 
         QString toString() const {
             return moduleID+title+label+connectorID+type;
@@ -64,6 +66,7 @@ public:
 	void insertTerminalHash(long id, Terminal t);
 	void insertTerminalnameHash(QString name, Terminal t);
 	void insertTerminalType(QString name, QString type);
+
 	QList<TerminalPair> getConnections();
 	ItemBase * getItem(QString label);
 	void addItem(ItemBase * item);
@@ -77,6 +80,7 @@ public:
 	long setId();
 	QPair<ItemBase *, QString> getItemAndCID2(long terminalId);
 	QPair<ItemBase *, QString> getItemAndCID(QString terminalname);
+    QList<QPair<ItemBase*, QString>> getItemAndCIDAll(QString terminalName);
 	QString genLabelHashKey(Terminal t);
     ItemBase * keyItem();
     void setSingle(bool b);
@@ -97,12 +101,17 @@ public:
     void appendSetConnectionList(int ind, QSharedPointer<SetConnection> setConnection);
     bool isMicrocontroller();
     QList<QPair<Terminal, QString>> getPinTypeTerminal(QString pintype);
-    QString pinEqual(QString pintype1, QString pintype2);
+    static QString pinEqual(QString pintype1, QString pintype2);
     QString getTerminalName(QString moduleID, QString connectorID);
     void deleteSetConnection(QSharedPointer<SetConnection> setConnection);
     void insertWireConnection(ItemBase* item, TerminalPair tp);
     TerminalPair getWireConnection(ItemBase* item);
     Terminal findTerminal(long itemID, QString connectorID);
+    QString getPinType(QString connectorID);
+    Terminal getConnectedTerminal(Terminal t);
+    void setMicrocontroller();
+    QSharedPointer<SetConnection> getSetConnectionWithModelSet(QSharedPointer<ModelSet> modelset);
+    QList<QPair<QString, QString>> getConnectedPairWithModelSet(QSharedPointer<ModelSet> modelSet);
 
 protected:
 	//static long m_nextid;
@@ -127,6 +136,7 @@ protected:
     QSharedPointer<SetConnection> m_breadboardConnection;
     bool m_confirm;
     QHash<ItemBase *, TerminalPair> m_wireConnection;
+    bool m_isMicrocontroller;
 
 };
 

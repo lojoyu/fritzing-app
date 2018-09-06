@@ -2,9 +2,6 @@
 
 #include "../debugdialog.h"
 
-const QList<QString> MICROCONTROLLER({"arduino_Uno_Rev3(fix)"});
-
-
 typedef QPair<QString, QString> PairString;
 
 ModelSet::ModelSet() {
@@ -16,6 +13,7 @@ ModelSet::ModelSet() {
     m_setid = -1;
     m_single = true;
     m_keyModuleID = "";
+    m_isMicrocontroller = false;
 
 }
 
@@ -28,6 +26,7 @@ ModelSet::ModelSet(long setid, QString moduleID) {
     m_single = true;
     m_confirm = false;
     m_keyModuleID = moduleID;
+    m_isMicrocontroller = false;
 }
 
 ModelSet::~ModelSet() {
@@ -166,10 +165,38 @@ QPair<ItemBase *, QString> ModelSet::getItemAndCID(QString terminalName) {
     return QPair<ItemBase *, QString>(item, t.connectorID);
 }
 
+QList<QPair<ItemBase*, QString>> ModelSet::getItemAndCIDAll(QString terminalName) {
+    if (!m_terminalnameHash.contains(terminalName)) {
+        return QList<QPair<ItemBase *, QString>>();
+    }
+    QList<QPair<ItemBase *, QString>> getList;
+    QList<Terminal> tlist = m_terminalnameHash[terminalName];
+    foreach(Terminal t, tlist) {
+        QString key = genLabelHashKey(t);
+        if (!m_labelHash.contains(key)) {
+            if (key == m_keyLabel) getList.append(QPair<ItemBase *, QString>(m_keyItem, t.connectorID));
+            continue;
+        }
+        ItemBase * item = m_labelHash[key];
+        getList.append(QPair<ItemBase*, QString> (item, t.connectorID));
+    }
+
+    return getList;
+}
+
+
+QString ModelSet::getPinType(QString connectorID) {
+    if (m_terminalType.contains(connectorID)) {
+        return m_terminalType[connectorID];
+    }
+    return "";
+}
+
 QList<QPair<ModelSet::Terminal, QString>> ModelSet::getPinTypeTerminal(QString pintype) {
     QList<QPair<Terminal, QString>> terminalList;
 
     foreach(QString terminalName, m_terminalType.keys()) {
+        // terminal type, terminal name
         QString pinGet = pinEqual(pintype, m_terminalType[terminalName]);
         if (pinGet != "") {
             if (m_terminalnameHash.contains(terminalName)) {
@@ -187,15 +214,18 @@ QList<QPair<ModelSet::Terminal, QString>> ModelSet::getPinTypeTerminal(QString p
 }
 
 QString ModelSet::pinEqual(QString pintype1, QString pintype2) {
-    if (pintype2.contains(pintype1)) return pintype1;
 
     if (pintype1 == "VCC") {
-        
-        QRegularExpression re(QString("\\d.*V"));
+
+        QRegularExpression re(QString("\\d[^-\\s]*V"));
         QRegularExpressionMatch match = re.match(pintype2);
         if (match.hasMatch()) return match.captured(0);
-        
-    } 
+
+    }
+
+    if (pintype2.contains(pintype1)) return pintype1;
+
+
     return "";
 }
 
@@ -283,11 +313,65 @@ void ModelSet::appendSetConnectionList(int ind, QSharedPointer<SetConnection> se
     else if (ind == 1) m_toSetConnectionList.append(setConnection);
 }
 
-
-bool ModelSet::isMicrocontroller() {
-    return MICROCONTROLLER.contains(m_keyModuleID);
+/**********************
+ * get connected setconnection with modelset
+ * by searching setConnectionList
+ * ********************/
+QSharedPointer<SetConnection> ModelSet::getSetConnectionWithModelSet(QSharedPointer<ModelSet> modelset) {
+    foreach(QSharedPointer<SetConnection> s, m_fromSetConnectionList) {
+        if (s->getToModelSet() == modelset) {
+            return s;
+        }
+    }
+    foreach(QSharedPointer<SetConnection> s, m_toSetConnectionList) {
+        if (s->getFromModelSet() == modelset) {
+            return s;
+        }
+    }
+    return QSharedPointer<SetConnection>(NULL);
 }
 
+
+/**********************
+ * get connected terminal with modelset
+ * by searching setConnectionList
+ * @param:
+ *  modelset: whose connections needs to be found out
+ * @return:
+ *  A list of pairs of terminal names.
+ * ********************/
+QList<QPair<QString, QString>> ModelSet::getConnectedPairWithModelSet(QSharedPointer<ModelSet> modelSet) {
+
+    QList<QPair<QString, QString>> connectedPairList;
+    foreach(QSharedPointer<SetConnection> s, m_fromSetConnectionList) {
+        if (s->getToModelSet() == modelSet) {
+            QList<SetConnection::Connection> connection = s->getConnectionList();
+            foreach(SetConnection::Connection c, connection) {
+                connectedPairList.append(QPair<QString, QString>(c.fromTerminal, c.toTerminal));
+            }
+        }
+    }
+    foreach(QSharedPointer<SetConnection> s, m_toSetConnectionList) {
+        if (s->getFromModelSet() == modelSet) {
+            QList<SetConnection::Connection> connection = s->getConnectionList();
+            foreach(SetConnection::Connection c, connection) {
+                connectedPairList.append(QPair<QString, QString>(c.fromTerminal, c.toTerminal));
+            }
+        }
+    }
+    return connectedPairList;
+}
+
+
+
+bool ModelSet::isMicrocontroller() {
+    return m_isMicrocontroller;
+}
+
+/**************************
+ * get terminal name matches moduleID & connectorID
+ * by searching all terminals
+  *************************/
 QString ModelSet::getTerminalName(QString moduleID, QString connectorID) {
     foreach(QString name, m_terminalnameHash.keys()) {
         QList<Terminal> tlist = m_terminalnameHash[name];
@@ -297,6 +381,8 @@ QString ModelSet::getTerminalName(QString moduleID, QString connectorID) {
     }
     return "";
 }
+
+
 
 
 void ModelSet::deleteSetConnection(QSharedPointer<SetConnection> setConnection) {
@@ -328,6 +414,18 @@ ModelSet::Terminal ModelSet::findTerminal(long itemID, QString connectorID) {
     }
     return Terminal();
 
+}
+
+ModelSet::Terminal ModelSet::getConnectedTerminal(ModelSet::Terminal t){
+    foreach(TerminalPair tp, m_connections) {
+        if (tp.first == t) return tp.second;
+        if (tp.second == t) return tp.first;
+    }
+    return Terminal();
+}
+
+void ModelSet::setMicrocontroller() {
+    m_isMicrocontroller = true;
 }
 
 ///////
