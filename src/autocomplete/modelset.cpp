@@ -313,6 +313,14 @@ void ModelSet::appendSetConnectionList(int ind, QSharedPointer<SetConnection> se
     else if (ind == 1) m_toSetConnectionList.append(setConnection);
 }
 
+
+//QString ModelSet::getPinType(QString connectorID) {
+//    if (m_terminalType.contains(connectorID)) {
+//        return m_terminalType[connectorID];
+//    }
+//    return "";
+//}
+
 /**********************
  * get connected setconnection with modelset
  * by searching setConnectionList
@@ -362,6 +370,37 @@ QList<QPair<QString, QString>> ModelSet::getConnectedPairWithModelSet(QSharedPoi
     return connectedPairList;
 }
 
+
+
+/**********************
+ * get connected terminal with modelset
+ * by searching setConnectionList
+ * @param:
+ *  modelset: whose connections needs to be found out
+ * @return:
+ *  A list of pairs of terminal names.
+ * ********************/
+QSet<QString> ModelSet::getConnectedNameWithModelSet(QSharedPointer<ModelSet> modelSet) {
+
+    QSet<QString> connectedSet;
+    foreach(QSharedPointer<SetConnection> s, m_fromSetConnectionList) {
+        if (s->getToModelSet() == modelSet) {
+            QList<SetConnection::Connection> connection = s->getConnectionList();
+            foreach(SetConnection::Connection c, connection) {
+                connectedSet.insert(c.fromTerminal);
+            }
+        }
+    }
+    foreach(QSharedPointer<SetConnection> s, m_toSetConnectionList) {
+        if (s->getFromModelSet() == modelSet) {
+            QList<SetConnection::Connection> connection = s->getConnectionList();
+            foreach(SetConnection::Connection c, connection) {
+                connectedSet.insert(c.toTerminal);
+            }
+        }
+    }
+    return connectedSet;
+}
 
 
 bool ModelSet::isMicrocontroller() {
@@ -546,4 +585,14 @@ QPair<ModelSet::Terminal, ModelSet::Terminal> SetConnection::getWireConnection(I
     }
     return QPair<ModelSet::Terminal, ModelSet::Terminal>();
 
+}
+
+// ind: from whom
+QString SetConnection::getConnectedTo(int ind, QString name) {
+    foreach(Connection c, m_connectionList) {
+        if (ind == 0 && c.fromTerminal == name) return c.toTerminal;
+        if (ind == 1 && c.toTerminal == name) return c.fromTerminal;
+    }
+
+    return "";
 }

@@ -156,6 +156,13 @@ QList<QList<QString> *> AutocompleteDBManager::getTutorialList(QList<long> ids, 
     return singleton->selectTutorialList(ids, max);
 }
 
+QList<QList<QString> *> AutocompleteDBManager::getTutorialList(QList<long> ids, int max, bool sameModelset) {
+    if (singleton == NULL) {
+        singleton = new AutocompleteDBManager(defaultname);
+    }
+    return singleton->selectTutorialList(ids, max, sameModelset);
+}
+
 /*
 AutocompleteDBManager::getNextSet(QString title) {
 	if (singleton == NULL) {
@@ -588,6 +595,64 @@ QList<QList<QString> *> AutocompleteDBManager::selectTutorialList(QList<long> id
 
 
 }
+
+
+QList<QList<QString> *> AutocompleteDBManager::selectTutorialList(QList<long> ids, int max, bool sameModelset) {
+    if (!sameModelset) return selectTutorialList(ids, max);
+
+    QList<QList<QString> *> tutorialList;
+
+    QString valueStr = "";
+    QString orderStr = "";
+    int ind = 1;
+    foreach(long id, ids) {
+        if (ind != 1) {
+            valueStr += ",";
+            orderStr += ",";
+        }
+        valueStr += QString("%1").arg(id);
+        orderStr += QString("x.id=%1 DESC").arg(id);
+        ind++;
+    }
+    DebugDialog::debug(valueStr);
+    DebugDialog::debug(orderStr);
+
+    QString queryStr = QString("SELECT x.id, tl.link FROM tutorial_link tl "
+    "INNER JOIN connections_tutorial ct "
+    "ON tl.id = ct.tutorial_id "
+    "INNER JOIN connections c "
+    "ON ct.connection_id = c.id "
+    "INNER JOIN "
+    "(SELECT * FROM connections where id in (%1)) as x "
+    "ON c.module_id = x.module_id and c.to_module_id = x.to_module_id "
+    "ORDER BY %2").arg(valueStr).arg(orderStr);
+
+    QSqlQuery query(m_database);
+    query.prepare(queryStr);
+    //query.bindValue(":values",valueStr);
+    QList<QString>* tList;
+    long prev = -1;
+    if (query.exec()) {
+        while(query.next()) {
+            long id = query.value(0).toLongLong();
+            if (prev == -1 || prev != id) {
+                tList = new QList<QString>();
+                tutorialList.append(tList);
+                prev = id;
+            }
+            tList->append(query.value(1).toString());
+        }
+
+    } else {
+        m_debugExec(QString("couldn't find connection of %1").arg(valueStr), query);
+    }
+    return tutorialList;
+
+
+
+}
+
+
 
 
 /*

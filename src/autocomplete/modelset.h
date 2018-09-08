@@ -112,6 +112,9 @@ public:
     void setMicrocontroller();
     QSharedPointer<SetConnection> getSetConnectionWithModelSet(QSharedPointer<ModelSet> modelset);
     QList<QPair<QString, QString>> getConnectedPairWithModelSet(QSharedPointer<ModelSet> modelSet);
+    QSet<QString> getConnectedNameWithModelSet(QSharedPointer<ModelSet> modelSet);
+
+
 
 protected:
 	//static long m_nextid;
@@ -181,6 +184,7 @@ public:
     void insertWireConnection(ItemBase * item, long itemID1, QString connectorID1, long itemID2, QString connectorID2);
     QPair<ModelSet::Terminal, ModelSet::Terminal> getWireConnection(ItemBase* item);
     void setModelSet(int ind, QSharedPointer<ModelSet> m);
+    QString getConnectedTo(int ind, QString name);
 
 protected:
 	QSharedPointer<ModelSet> m_fromModelSet;

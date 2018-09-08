@@ -112,7 +112,7 @@ void RecommendListWidget::onItemEvent(QListWidgetItem* listitem, bool hover) {
 
         }
 
-        m_sketchwidget->selectSetToSet(itemDataV[1].value<QSharedPointer<ModelSet>>(), itemDataV[2].value<QSharedPointer<SetConnection>>(), connection&!hover, hover) ;
+        m_sketchwidget->selectSetToSet(itemDataV[1].value<QSharedPointer<ModelSet>>(), itemDataV[2].value<QSharedPointer<SetConnection>>(), connection, hover) ;
     }
 
 }
@@ -158,6 +158,9 @@ void RecommendListWidget::setTosetList(QList<QSharedPointer<ModelSet>> toModelse
         //m_recommendlist->setItemWidget(m_recommendlist->item(i),label);
         //setItemWidget(this->item(i), label);
     }
+    if (connection) {
+        m_sketchwidget->selectSetToSet(toModelsetList[0], setConnectionList[0], true, true);
+    }
 }
 
 void RecommendListWidget::setModelSetList(QList<QSharedPointer<ModelSet>> modelSetList){
@@ -177,12 +180,12 @@ void RecommendListWidget::setModelSetList(QList<QSharedPointer<ModelSet>> modelS
         //m_recommendlist->insertItem(i ,item) ;
         insertItem(i, item);
 
-        QLabel * label = new QLabel();
-        label->setAlignment(Qt::AlignCenter);
-        label->setText("<a href=\"https://github.com/lojoyu/fritzing-app\">github");
-        label->setOpenExternalLinks(true);
-        //m_recommendlist->setItemWidget(m_recommendlist->item(i),label);
-        setItemWidget(this->item(i), label);
+//        QLabel * label = new QLabel();
+//        label->setAlignment(Qt::AlignCenter);
+//        label->setText("<a href=\"https://github.com/lojoyu/fritzing-app\">github");
+//        label->setOpenExternalLinks(true);
+//        //m_recommendlist->setItemWidget(m_recommendlist->item(i),label);
+//        setItemWidget(this->item(i), label);
     }
     m_sketchwidget->selectModelSet(modelSetList[0], true);
 

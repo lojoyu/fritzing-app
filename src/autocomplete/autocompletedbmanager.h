@@ -21,6 +21,7 @@ class AutocompleteDBManager {
 		static QList<QMap<QString, QVariant> *> getConnectionsByModuleID(long mid, QList<long> mids);
 		static QList<QMap<QString, QVariant> *> getConnectionsBetweenModules(long mid1, long mid2, QList<QPair<QString, QString>> includePair);
         static QList<QList<QString> *> getTutorialList(QList<long> ids, int max);
+        static QList<QList<QString> *> getTutorialList(QList<long> ids, int max, bool sameModelset);
 
 	protected:
         QList<QMap<QString, QVariant> *> selectModelSet(QString moduleID);
@@ -33,7 +34,7 @@ class AutocompleteDBManager {
 		QList<QMap<QString, QVariant> *> selectConnectionsByModuleID(long mid, QList<long> mids);
 		QList<QMap<QString, QVariant> *> selectConnectionsBetweenModules(long mid1, long mid2, QList<QPair<QString, QString>> includePair);
         QList<QList<QString> *> selectTutorialList(QList<long> ids, int max);
-
+        QList<QList<QString> *> selectTutorialList(QList<long> ids, int max, bool sameModelSet);
 
 		void deleteConnection();
 
