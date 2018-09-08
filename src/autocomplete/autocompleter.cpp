@@ -23,6 +23,7 @@
 #include <QVariant>
 #include <QHash>
 
+
 typedef QPair<long, long> LongLongPair;
 typedef QMap<QString, QVariant> StringVairantMap;
 
