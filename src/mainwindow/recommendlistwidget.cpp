@@ -93,7 +93,7 @@ void RecommendListWidget::onItemEvent(QListWidgetItem* listitem, bool hover) {
     QVariantList itemDataV = listitem->data(Qt::UserRole).toList();
     SuggestionType type = (SuggestionType)itemDataV[0].toInt();
     if (type == SuggestionType::toModelSet) {
-        m_sketchwidget->selectModelSet(itemDataV[1].value<QSharedPointer<ModelSet>>(), hover);
+        m_sketchwidget->selectModelSet(itemDataV[1].value<QSharedPointer<ModelSet>>(), hover, this->count() > 1 ? false : true);
     } else {
         bool connection = type == SuggestionType::setToSet ? false : true;
         QVariantList tList = itemDataV[3].value<QVariantList>();
@@ -187,7 +187,8 @@ void RecommendListWidget::setModelSetList(QList<QSharedPointer<ModelSet>> modelS
 //        //m_recommendlist->setItemWidget(m_recommendlist->item(i),label);
 //        setItemWidget(this->item(i), label);
     }
-    m_sketchwidget->selectModelSet(modelSetList[0], true);
+    bool next = this->count() > 1 ? false : true;
+    m_sketchwidget->selectModelSet(modelSetList[0], true, next);
 
 }
 

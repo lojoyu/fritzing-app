@@ -2269,7 +2269,7 @@ void AddModelSetCommand::undo() {
 }
 
 void AddModelSetCommand::redo() {
-	m_sketchWidget->addToModelSet(m_modelSet, false);
+    m_sketchWidget->addToModelSet(m_modelSet, false, true);
 	BaseCommand::redo();
 }
 

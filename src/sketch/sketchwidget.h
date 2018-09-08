@@ -784,11 +784,11 @@ public:
     void setAutoComplete(bool);
 
     QList<QSharedPointer<ModelSet>> getSavedModelSets();
-    void selectModelSet(QSharedPointer<ModelSet>, bool transparent);
+    void selectModelSet(QSharedPointer<ModelSet>, bool transparent, bool next);
     void selectSetToSet(QSharedPointer<ModelSet> modelSet, QSharedPointer<SetConnection> setconnection, bool confirmSetConnection, bool transparent);
     void deleteModelSet(QSharedPointer<ModelSet> modelSet);
     void deleteSetConnection(QSharedPointer<SetConnection> setConnection);
-    void addToModelSet(QSharedPointer<ModelSet>, bool transparent);
+    void addToModelSet(QSharedPointer<ModelSet>, bool transparent, bool next);
     void testWire();
 
 signals:
@@ -802,7 +802,7 @@ public slots:
 
 
 protected:
-	void addModelSet(QSharedPointer<ModelSet>, bool transparent);
+    void addModelSet(QSharedPointer<ModelSet>, bool transparent);
     void addSetConnection(QSharedPointer<SetConnection> setconnection, bool transparent);
     ItemBase * addSetItem(QPointF pos, QString & toModuleID, bool transparent);
     ItemBase * addSetItem(ItemBase * fromItem, const QString & fromConnectorID, QString toModuleID, const QString & toConnectorID, bool transparent);

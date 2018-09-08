@@ -136,8 +136,8 @@ Wire * SketchWidget::squareWire(ItemBase* wireItem) {
     return newWire;
 }
 
-void SketchWidget::selectModelSet(QSharedPointer<ModelSet> modelSet, bool transparent) {
-    if (transparent) addToModelSet(modelSet, transparent);
+void SketchWidget::selectModelSet(QSharedPointer<ModelSet> modelSet, bool transparent, bool next) {
+    if (transparent) addToModelSet(modelSet, transparent, next);
     else {
         QUndoCommand* parentCommand = new TemporaryCommand(tr("Add modelSet %1").arg(modelSet->keyTitle()));
         newAddModelSetCommand(modelSet, parentCommand);
@@ -178,7 +178,7 @@ AddSetConnectionCommand * SketchWidget::newAddSetConnectionCommand(QSharedPointe
     return addSetConnectionCommand;
 }
 
-void SketchWidget::addToModelSet(QSharedPointer<ModelSet> modelSet, bool transparent) {
+void SketchWidget::addToModelSet(QSharedPointer<ModelSet> modelSet, bool transparent, bool next) {
     findKeyItem(modelSet);
     
     addModelSet(modelSet, transparent);
@@ -194,7 +194,7 @@ void SketchWidget::addToModelSet(QSharedPointer<ModelSet> modelSet, bool transpa
     if (!breadBoardSetConnection.isNull())
         modelSet->addBreadboardConnection(breadBoardSetConnection);
 
-    if (!transparent || (modelSet->single() && breadBoardSetConnection.isNull())) {
+    if (!transparent || (modelSet->single() && breadBoardSetConnection.isNull() && next)) {
         if (!m_savedModelSet.contains(modelSet)) m_savedModelSet.append(modelSet);
         confirmSelect(modelSet);
     } else {
@@ -999,7 +999,7 @@ void SketchWidget::checkSelectSuggestion() {
         //confirm!
         if (setConnection.isNull()) {
             //complete model set only
-            selectModelSet(m_pressModelSet, false);
+            selectModelSet(m_pressModelSet, false, false);
         } else {
             //complete module to module
             selectSetToSet(m_pressModelSet, setConnection, false, false);
