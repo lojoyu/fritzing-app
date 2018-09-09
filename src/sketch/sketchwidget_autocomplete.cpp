@@ -131,19 +131,23 @@ Wire * SketchWidget::squareWire(ItemBase* wireItem, QPointF newPos) {
 
     ConnectorItem * newConnector1 = newWire->connector1();
     foreach (ConnectorItem * toConnectorItem, oldConnector1->connectedToItems()) {
-        //oldConnector1->tempRemove(toConnectorItem, false);
-        //toConnectorItem->tempRemove(oldConnector1, false);
-        //newConnector1->tempConnectTo(toConnectorItem, true);
-        //toConnectorItem->tempConnectTo(newConnector1, true);
-        newConnector1->connectTo(toConnectorItem);
-        toConnectorItem->connectTo(newConnector1);
+        oldConnector1->tempRemove(toConnectorItem, false);
+        toConnectorItem->tempRemove(oldConnector1, false);
+        newConnector1->tempConnectTo(toConnectorItem, true);
+        toConnectorItem->tempConnectTo(newConnector1, true);
+        //newConnector1->connectTo(toConnectorItem);
+        //toConnectorItem->connectTo(newConnector1);
     }
-//    oldConnector1->tempConnectTo(newWire->connector0(), true);
-//    newWire->connector0()->tempConnectTo(oldConnector1, true);
-    oldConnector1->connectTo(newWire->connector0());
-    newWire->connector0()->connectTo(oldConnector1);
-    changeConnection(wire->id(), "connector1", newWire->id(), "connector0", wire->viewLayerPlacement(), true, false, false);
+    oldConnector1->tempConnectTo(newWire->connector0(), true);
+    newWire->connector0()->tempConnectTo(oldConnector1, true);
+    //oldConnector1->connectTo(newWire->connector0());
+    //newWire->connector0()->connectTo(oldConnector1);
+    //changeConnection(wire->id(), "connector1", newWire->id(), "connector0", wire->viewLayerPlacement(), true, false, true);
+    changeConnection(newWire->id(), "connector0", wire->id(), "connector1", wire->viewLayerPlacement(), true, false, true);
+
     //newWire->initDragEnd(newWire->connector0(), newPos);
+
+    this->update();
 
     return newWire;
 }
@@ -530,29 +534,37 @@ void SketchWidget::addSetConnection(QSharedPointer<SetConnection> setconnection,
             ItemBase * finalWire = wire;
             if (!wire) continue;
             QList<ItemBase *> newWireList = arrangeWire(wire, p1.first, p1.second, p.first, p.second);
+            ViewLayer::ViewLayerPlacement place;
             if (c.changeColor) {
                 Wire * w = qobject_cast<Wire *>(wire);
                 w->setColor(c.color, 1);
+                place = ViewLayer::specFromID(w->connector1()->attachedToViewLayerID());
             }
             //p1.first(item) -> id?, p1.second
             wire->setModelSet(to);
             setconnection->appendWireList(wire);
 
+
             foreach(ItemBase * wireI, newWireList) {
                 if (c.changeColor) {
                     Wire * w = qobject_cast<Wire *>(wireI);
                     w->setColor(c.color, 1);
+
                 }
                 wireI->setModelSet(to);
                 wireI->setOpacity(wire->opacity());
                 setconnection->appendWireList(wireI);
                 finalWire = wireI;
+
             }
             if (finalWire == wire) {
                 setconnection->insertWireConnection(wire, p1.first->id(), p1.second, p.first->id(), p.second);
             } else {
                 setconnection->insertWireConnection(wire, p1.first->id(), p1.second, -1, "");
                 setconnection->insertWireConnection(finalWire, -1, "", p.first->id(), p.second);
+                changeConnection(p1.first->id(), p1.second, wire->id(), "connector0", place, true, false, true);
+                changeConnection(p.first->id(), p.second, finalWire->id(), "connector1", place, true, false, true);
+
             }
             //setconnection->appendWireList(newWire);
             //TODO: wire store which set connection it belongs to
@@ -803,7 +815,7 @@ ItemBase* SketchWidget::addSetWire(ItemBase * fromItem, const QString & fromConn
     if (transparent) wire->setOpacity(0.5);
 
     changeConnection(fromItem->id(), fromConnectorID, wireID, "connector0", ViewLayer::specFromID(fromConnectorItem->attachedToViewLayerID()), true, false, false);
-	changeConnection(toItem->id(), toConnectorID, wireID, "connector1",ViewLayer::specFromID(toConnectorItem->attachedToViewLayerID()), true, false, false);
+    changeConnection(toItem->id(), toConnectorID, wireID, "connector1",ViewLayer::specFromID(toConnectorItem->attachedToViewLayerID()), true, false, false);
 
     return wire;
 }
