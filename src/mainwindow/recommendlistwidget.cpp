@@ -129,6 +129,7 @@ void RecommendListWidget::setTosetList(QList<QSharedPointer<ModelSet>> toModelse
 
     //m_recommendlist->clear();
     clear();
+    m_tutorial->clear();
     for (int i = 0 ; i < toModelsetList.length() ; i++) {
         //QListWidgetItem* item = new QListWidgetItem(QString("%1 recommend").arg(i+1));
         QListWidgetItem* item = new QListWidgetItem();
@@ -168,6 +169,7 @@ void RecommendListWidget::setTosetList(QList<QSharedPointer<ModelSet>> toModelse
 void RecommendListWidget::setModelSetList(QList<QSharedPointer<ModelSet>> modelSetList){
 
     clear();
+    m_tutorial->clear();
 
     for (int i = 0 ; i < modelSetList.length() ; i++) {
         //QListWidgetItem* item = new QListWidgetItem(QString("%1 recommend").arg(i+1));
@@ -198,6 +200,7 @@ void RecommendListWidget::clearList() {
     //qDeleteAll(m_recommendlist->);
     //m_recommendlist->clear();
     clear();
+    m_tutorial->clear();
 }
 
 void RecommendListWidget::loadImage(ModelPart * modelPart, QListWidgetItem * lwi)

@@ -774,7 +774,7 @@ void SketchWidget::removePrevSetConnection(bool removeBreadboard) {
         itemList.append(breadboardConnection->getWireList());
         breadboardConnection->emptyWireList();
     }
-    if (!breadboardOwnConnection.isNull() && removeBreadboard && !breadboardOwnConnection->isConfirm()) {
+    if (!breadboardOwnConnection.isNull() && removeBreadboard && !breadboardOwnConnection->isConfirm() && m_breadBoardGnd) {
         itemList.append(breadboardOwnConnection->getWireList());
         breadboardOwnConnection->emptyWireList();
         m_breadBoardGnd = false;
