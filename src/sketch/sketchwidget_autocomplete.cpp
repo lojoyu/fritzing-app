@@ -333,8 +333,8 @@ SketchWidget::ConnectorArrange SketchWidget::getConnectorArrange(ItemBase * item
 //    return QPair<double, double>(a, b);
 //}
 
-void SketchWidget::selectModelSet(QSharedPointer<ModelSet> modelSet, bool transparent) {
-    if (transparent) addToModelSet(modelSet, transparent);
+void SketchWidget::selectModelSet(QSharedPointer<ModelSet> modelSet, bool transparent, bool next) {
+    if (transparent) addToModelSet(modelSet, transparent, next);
     else {
         QUndoCommand* parentCommand = new TemporaryCommand(tr("Add modelSet %1").arg(modelSet->keyTitle()));
         newAddModelSetCommand(modelSet, parentCommand);
@@ -460,11 +460,13 @@ void SketchWidget::addSetConnection(QSharedPointer<SetConnection> setconnection,
 
 	QList<SetConnection::Connection> connectionList = setconnection->getConnectionList();
     foreach(SetConnection::Connection c, connectionList) {
+        QPair<ItemBase *, QString> p1 = from->getItemAndCID(c.fromTerminal);
         QPair<ItemBase *, QString> p2;
         QString toPintype = to->getPinType(c.toTerminal);
         QList<QPair<ModelSet::Terminal, QString>> pintypeT = to->getPinTypeTerminal(toPintype);
         QList<QPair<ModelSet::Terminal, QString>> breadboardT = m_breadBoardModelSet->getPinTypeTerminal(toPintype);
         QString breadboardPin = "";
+        bool nearestBreadBoard = false;
         if (!to->breadboardConnection().isNull()) {
             breadboardPin = to->breadboardConnection()->getConnectedTo(1, c.toTerminal);
         }
@@ -478,10 +480,12 @@ void SketchWidget::addSetConnection(QSharedPointer<SetConnection> setconnection,
             QList<QString> vccConnectorIDList;
             vccConnectorIDList.append(breadboardPin);
             //TODO: findBreadBoardNearest
-            ConnectorItem * ci = from->keyItem()->findConnectorItemWithSharedID(c.toTerminal);
+            ConnectorItem * ci = p1.first->findConnectorItemWithSharedID(p1.second);
             QString vccConnectorID;
-            if (ci) vccConnectorID = findBreadBoardNearest(ci->sceneAdjustedTerminalPoint(NULL), vccConnectorIDList, vccConnectorIDList, false);
-            else vccConnectorID = findBreadBoardUnused(vccConnectorIDList, vccConnectorIDList, false);
+            if (ci) {
+                nearestBreadBoard = true;
+                vccConnectorID = findBreadBoardNearest(ci->sceneAdjustedTerminalPoint(NULL), vccConnectorIDList, vccConnectorIDList, false);
+            } else vccConnectorID = findBreadBoardUnused(vccConnectorIDList, vccConnectorIDList, false);
             p2 = QPair<ItemBase *, QString>(m_breadBoardModelSet->keyItem(), vccConnectorID);
             p2List.append(p2);
         }
@@ -521,7 +525,7 @@ void SketchWidget::addSetConnection(QSharedPointer<SetConnection> setconnection,
             if (p2List.length() > 0) p2 = p2List[0];
             else p2 = QPair<ItemBase*, QString>();
         }
-        QPair<ItemBase *, QString> p1 = from->getItemAndCID(c.fromTerminal);
+
 
         if (p1.first == NULL|| p2.first == NULL || p1.second == "" ||  p2.second == "") continue;
         DebugDialog::debug(QString("p1: %1").arg(p1.first->title()));
@@ -533,7 +537,10 @@ void SketchWidget::addSetConnection(QSharedPointer<SetConnection> setconnection,
             ItemBase * wire = addSetWire(p1.first, p1.second, p.first, p.second, transparent);
             ItemBase * finalWire = wire;
             if (!wire) continue;
-            QList<ItemBase *> newWireList = arrangeWire(wire, p1.first, p1.second, p.first, p.second);
+            QList<ItemBase *> newWireList;
+            if (!nearestBreadBoard) {
+                newWireList = arrangeWire(wire, p1.first, p1.second, p.first, p.second);
+            }
             ViewLayer::ViewLayerPlacement place;
             if (c.changeColor) {
                 Wire * w = qobject_cast<Wire *>(wire);
@@ -726,6 +733,9 @@ void SketchWidget::removePrevModelSet() {
     if (m_prevModelSet.isNull()) return;
     if (!m_prevModelSet->isConfirm()) {
         QList<ItemBase *> itemList = m_prevModelSet->getItemList();
+        //TODO: check if correct
+        findKeyItem(m_prevModelSet);
+        m_prevModelSet->keyItem()->setModelSet(QSharedPointer<ModelSet>(NULL));
         foreach(ItemBase * itemBase, itemList) {
             if (itemBase == m_prevModelSet->keyItem()) {
                 m_prevModelSet->setKeyItem(NULL);
@@ -802,9 +812,10 @@ ItemBase* SketchWidget::addSetWire(ItemBase * fromItem, const QString & fromConn
     //QList<ConnectorItem *> exclude;
     //ConnectorItem * fromOverConnectorItem = fromConnectorItem->findConnectorUnder(true, true, exclude, true, fromConnectorItem);
     //QPointF fromOverPos = fromOverConnectorItem->sceneAdjustedTerminalPoint(NULL);
-    QPointF fromConnectorPos = fromConnectorItem->sceneAdjustedTerminalPoint(NULL);
+
     ConnectorItem * toConnectorItem = findConnectorItem(toItem, toConnectorID, toItem->viewLayerPlacement());
-	QPointF toConnectorPos = toConnectorItem->sceneAdjustedTerminalPoint(NULL);
+    QPointF fromConnectorPos = fromConnectorItem->sceneAdjustedTerminalPoint(NULL);
+    QPointF toConnectorPos = toConnectorItem->sceneAdjustedTerminalPoint(NULL);
 
     line.setLine(0, 0, -fromConnectorPos.x()+toConnectorPos.x(), -fromConnectorPos.y()+toConnectorPos.y());
 
@@ -1055,14 +1066,14 @@ QString SketchWidget::findBreadBoardNearest(QPointF pos, QList<QString> connecto
         foreach(ConnectorItem * citem, connectorItems) {
             if (excludeConnectorIDList.contains(citem->connectorSharedID())) continue;
             connectorItemList = citem->connectedToItems();
-            if (connectorItemList.length() == 0) return citem->connectorSharedID();
+            if (connectorItemList.length() == 0) continue;
             if (connectorItemList.length() != 0 && checkConnected) {
                 connected = true;
                 break;
             }
         }
-        if (!connected && checkConnected) {
-            breadboardList.append(connectorItem);
+        if (!connected) {
+            breadboardList.append(connectorItems);
         }
 
     }
@@ -1071,7 +1082,7 @@ QString SketchWidget::findBreadBoardNearest(QPointF pos, QList<QString> connecto
     foreach(ConnectorItem * ci, breadboardList) {
         QPointF ciPos = ci->sceneAdjustedTerminalPoint(NULL);
         double dist = QLineF(ciPos, pos).length();
-        if (dist < minDist) {
+        if (dist < minDist && ci->attachedTo() == m_breadBoardModelSet->keyItem()) {
             minDist = dist;
             minC = ci;
         }
@@ -1195,12 +1206,19 @@ void SketchWidget::checkMousePressSuggestion(QGraphicsItem * item) {
     }
 
     if (!isModelSet) {
+        m_pressItem = itemBase;
         removePrevModelSet();
-        //AutoCompleter::clearRecommend();
+        AutoCompleter::clearRecommend();
     }
 }
 
 void SketchWidget::checkSelectSuggestion() {
+    if (m_pressItem) {
+        AutoCompleter::getSuggestionSet(m_pressItem, this);
+        m_pressItem = NULL;
+        return;
+    }
+
     if (!m_autoComplete || m_pressModelSet.isNull()) return;
     if (m_pressModelSet != m_prevModelSet) removePrevModelSet();
     QSharedPointer<SetConnection> setConnection = m_pressModelSet->setConnection();

@@ -856,6 +856,7 @@ protected:
     QPointF m_tempPoint = QPointF(0, 0);
     bool m_draggingSuggestion = false;
     bool m_breadBoardGnd = false;
+    ItemBase * m_pressItem = NULL;
 
 };
 
