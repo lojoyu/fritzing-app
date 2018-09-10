@@ -802,7 +802,15 @@ public slots:
 
 
 protected:
-    void addModelSet(QSharedPointer<ModelSet>, bool transparent);
+    enum ConnectorArrange{
+        UP,
+        DOWN,
+        LEFT,
+        RIGHT
+    };
+
+
+	void addModelSet(QSharedPointer<ModelSet>, bool transparent);
     void addSetConnection(QSharedPointer<SetConnection> setconnection, bool transparent);
     ItemBase * addSetItem(QPointF pos, QString & toModuleID, bool transparent);
     ItemBase * addSetItem(ItemBase * fromItem, const QString & fromConnectorID, QString toModuleID, const QString & toConnectorID, bool transparent);
@@ -828,7 +836,13 @@ protected:
     bool dragMoveEventFromRecommend(QDragMoveEvent * event);
     bool dropEventFromRecommend(QDropEvent * event);
     void updateModelSetPos(QPoint pos);
-    Wire* squareWire(ItemBase* wireItem);
+    Wire* squareWire(ItemBase* wireItem, QPointF newPos);
+    QList<ItemBase *> arrangeWire(ItemBase* wireItem, ItemBase * fromItem, const QString & fromConnectorID, ItemBase * toItem, const QString & toConnectorID);
+    ConnectorArrange getConnectorArrange(ItemBase * itemBase, QPointF point);
+    bool isLeft(QPointF p1, QPointF p2, QPointF pin);
+    double fRand(double fMin, double fMax);
+    QString findBreadBoardNearest(QPointF pos, QList<QString> connectorIDList, QList<QString> excludeConnectorIDList, bool checkConnected);
+
 
 protected:
 	bool m_autoComplete;

@@ -15,6 +15,10 @@ typedef QPair<QString, QString> StringPair;
 typedef QPair<ModelSet::Terminal, QString> TerminalStringPair;
 typedef QPair<ItemBase*, QString> ItemBaseStringPair;
 
+bool SketchWidget::isLeft(QPointF p1, QPointF p2, QPointF pin){
+    return ((p2.x() - p1.x())*(pin.y() - p1.y()) - (p2.y() - p1.y())*(pin.x() - p1.x())) > 0;
+}
+
 void SketchWidget::setAutoComplete(bool autoComplete) {
 	m_autoComplete = autoComplete;
     autocompleteInit();
@@ -37,6 +41,7 @@ void SketchWidget::autocompleteInit() {
         m_breadBoardModelSet->insertTerminalnameHash(connectorItem->connectorSharedID(), t1);
     }
     m_breadBoardGnd = false;
+    //testWire();
 
 }
 
@@ -52,9 +57,11 @@ void SketchWidget::testWire() {
     viewGeometryWire.setLine(line);
     ItemBase * wireItem = addItemAuxTemp(wirePart, defaultViewLayerPlacement(wirePart), viewGeometryWire, wireID, true, m_viewID, true);
 
-
     Wire * wire = qobject_cast<Wire *>(wireItem);
     wire->setColor(QColor(255, 0, 0), 1);
+
+    //wire->connector0()->connectTo(m_addedDefaultPart->findConnectorItemWithSharedID("pin3W"));
+    changeConnection(m_addedDefaultPart->id(), "pin3W", wireID, "connector0", defaultViewLayerPlacement(wirePart), true, false, false);
 
 
     wire->saveGeometry();
@@ -93,7 +100,7 @@ void SketchWidget::testWire() {
 
 }
 
-Wire * SketchWidget::squareWire(ItemBase* wireItem) {
+Wire * SketchWidget::squareWire(ItemBase* wireItem, QPointF newPos) {
     Wire * wire = qobject_cast<Wire *>(wireItem);
     if (!wire) return NULL;
 
@@ -102,7 +109,7 @@ Wire * SketchWidget::squareWire(ItemBase* wireItem) {
 
     QPointF oldPos = wire->pos();
     QLineF oldLine = wire->line();
-    QPointF newPos = QPointF(oldLine.p1().x(), oldLine.p2().y())+oldPos;
+    //QPointF newPos = QPointF(oldLine.p1().x(), oldLine.p2().y())+oldPos;
 
     Bezier left, right;
     bool curved = wire->initNewBendpoint(newPos, left, right);
@@ -116,28 +123,218 @@ Wire * SketchWidget::squareWire(ItemBase* wireItem) {
     vg.setLine(newLine2);
 
     ConnectorItem * oldConnector1 = wire->connector1();
-    Wire * newWire = createTempWireForDragging(wire, wire->modelPart(), oldConnector1, vg, wire->viewLayerPlacement());
-//    if (curved) {
-//        right.translateToZero();
-//        newWire->changeCurve(&right);
-//    }
+    //Wire * newWire = createTempWireForDragging(wire, wire->modelPart(), oldConnector1, vg, wire->viewLayerPlacement());
+    //bool temp = wireItem->opacity() == 1 ? false : true;
+    bool temp = false;
+    ItemBase * newWireItem = addItemAuxTemp(wire->modelPart(), wire->viewLayerPlacement(), vg, ItemBase::getNextID(), true, m_viewID, temp);
+    Wire * newWire = qobject_cast<Wire*>(newWireItem);
+
     ConnectorItem * newConnector1 = newWire->connector1();
     foreach (ConnectorItem * toConnectorItem, oldConnector1->connectedToItems()) {
         oldConnector1->tempRemove(toConnectorItem, false);
         toConnectorItem->tempRemove(oldConnector1, false);
-        newConnector1->tempConnectTo(toConnectorItem, false);
-        toConnectorItem->tempConnectTo(newConnector1, false);
+        newConnector1->tempConnectTo(toConnectorItem, true);
+        toConnectorItem->tempConnectTo(newConnector1, true);
+        //newConnector1->connectTo(toConnectorItem);
+        //toConnectorItem->connectTo(newConnector1);
     }
-    oldConnector1->tempConnectTo(newWire->connector0(), false);
-    newWire->connector0()->tempConnectTo(oldConnector1, false);
-    newWire->initDragEnd(newWire->connector0(), newPos);
+    oldConnector1->tempConnectTo(newWire->connector0(), true);
+    newWire->connector0()->tempConnectTo(oldConnector1, true);
+    //oldConnector1->connectTo(newWire->connector0());
+    //newWire->connector0()->connectTo(oldConnector1);
+    //changeConnection(wire->id(), "connector1", newWire->id(), "connector0", wire->viewLayerPlacement(), true, false, true);
+    changeConnection(newWire->id(), "connector0", wire->id(), "connector1", wire->viewLayerPlacement(), true, false, true);
 
+    //newWire->initDragEnd(newWire->connector0(), newPos);
+
+    this->update();
 
     return newWire;
 }
 
-void SketchWidget::selectModelSet(QSharedPointer<ModelSet> modelSet, bool transparent, bool next) {
-    if (transparent) addToModelSet(modelSet, transparent, next);
+double SketchWidget::fRand(double fMin, double fMax){
+    double f = (double)rand() / RAND_MAX;
+    return fMin + f * (fMax - fMin);
+}
+
+QList<ItemBase *> SketchWidget::arrangeWire(ItemBase* wireItem, ItemBase * fromItem, const QString & fromConnectorID,
+                              ItemBase * toItem, const QString & toConnectorID) {
+
+
+    ConnectorItem * fromConnectorItem = findConnectorItem(fromItem, fromConnectorID, fromItem->viewLayerPlacement());
+    ConnectorItem * toConnectorItem = findConnectorItem(toItem, toConnectorID, toItem->viewLayerPlacement());
+    if (!fromConnectorItem || !toConnectorItem ) return QList<ItemBase *>();
+
+    QString from = fromItem->title();
+    QString to = toItem->title();
+    QPointF fromConnectorPos = fromConnectorItem->sceneAdjustedTerminalPoint(NULL);
+    QPointF toConnectorPos = toConnectorItem->sceneAdjustedTerminalPoint(NULL);
+    QPointF moveVector = toConnectorPos - fromConnectorPos;
+
+    ConnectorArrange fromConnectorArrange = getConnectorArrange(fromItem, fromConnectorPos);
+    ConnectorArrange toConnectorArrange = getConnectorArrange(toItem, toConnectorPos);
+
+    QList<QPointF> moveList({QPointF(0, -1), QPointF(0, 1), QPointF(-1, 0), QPointF(1, 0)});
+    QPointF fromMove = moveList[fromConnectorArrange];
+    QPointF fromAxis(qAbs(fromMove.x()), qAbs(fromMove.y()));
+    QPointF toMove = moveList[toConnectorArrange];
+    QPointF toAxis(qAbs(toMove.x()), qAbs(toMove.y()));
+
+    QPoint verMove(qAbs(fromMove.y()), qAbs(fromMove.x()));
+    double sign = QPointF::dotProduct(moveVector, verMove) >= 0 ? 1 : -1;
+
+    QPointF fromAddTo = fromMove+toMove;
+    bool fromSide = QPointF::dotProduct(moveVector, fromMove) >= 0 ? true : false;
+    bool toSide = QPointF::dotProduct(-moveVector, toMove) >= 0 ? true : false;
+    QList<QPointF> turnPos;
+
+    QPointF selfR(30, 30);
+    QPointF lowestR(4, 4);
+    double dist = qAbs(QPointF::dotProduct(moveVector, fromAxis));
+    double verDist = qAbs(QPointF::dotProduct(moveVector, verMove));
+
+    if (fromAddTo.x() == 0 || fromAddTo.y() == 0) { // same axis
+        if (fromSide && toSide) { //face to face
+            double randomBtw = fRand(QPointF::dotProduct(lowestR, fromAxis),
+                    dist - QPointF::dotProduct(lowestR, fromAxis));
+            QPointF first = fromConnectorPos + randomBtw * fromMove;
+            turnPos.append(first);
+            if (fromAddTo.x() == 0) turnPos.append(QPointF(toConnectorPos.x(), first.y()));
+            else turnPos.append(QPointF(first.x(), toConnectorPos.y()));
+
+        } else if (fromSide && !toSide) { // same direction + from true
+            double randomOut = fRand(dist + QPointF::dotProduct(lowestR, toAxis),
+                                    dist + QPointF::dotProduct(selfR, toAxis));
+            QPointF first = fromConnectorPos + randomOut * fromMove;
+            turnPos.append(first);
+            if (fromAddTo.x() == 0) turnPos.append(QPointF(toConnectorPos.x(), first.y()));
+            else turnPos.append(QPointF(first.x(), toConnectorPos.y()));
+
+        } else if (!fromSide && toSide) { // same direction + to true
+            double randomSelf = fRand(QPointF::dotProduct(lowestR, fromAxis),
+                                      QPointF::dotProduct(selfR, fromAxis));
+            QPointF first = fromConnectorPos + randomSelf * fromMove;
+            turnPos.append(first);
+            if (fromAddTo.x() == 0) turnPos.append(QPointF(toConnectorPos.x(), first.y()));
+            else turnPos.append(QPointF(first.x(), toConnectorPos.y()));
+
+        } else { // back to back
+            double randomSelf = fRand(QPointF::dotProduct(lowestR, fromAxis),
+                                      QPointF::dotProduct(selfR, fromAxis));
+            QPointF first = fromConnectorPos + randomSelf * fromMove;
+            turnPos.append(first);
+
+            //TODO: change lowestR -> bound
+            double randomBtw = fRand(QPointF::dotProduct(lowestR, verMove),
+                    verDist - QPointF::dotProduct(lowestR, verMove));
+            QPointF second = sign * randomBtw * verMove + first;
+            turnPos.append(second);
+            double randomOut = fRand(dist + QPointF::dotProduct(lowestR, toAxis),
+                                    dist + QPointF::dotProduct(selfR, toAxis));
+            QPointF third = fromConnectorPos + randomOut * (-fromMove);
+            third = QPointF::dotProduct(third, fromAxis) * fromAxis + QPointF::dotProduct(second, verMove) * verMove;
+            turnPos.append(third);
+            if (fromAddTo.x() == 0) turnPos.append(QPointF(toConnectorPos.x(), third.y()));
+            else turnPos.append(QPointF(third.x(), toConnectorPos.y()));
+
+        }
+
+    } else {
+        if (fromSide && toSide) { //face to face
+            QPointF first = QPointF::dotProduct(fromConnectorPos, toAxis) * toAxis +
+                    QPointF::dotProduct(toConnectorPos, fromAxis) * fromAxis;
+            turnPos.append(first);
+
+        } else if (fromSide && !toSide) { // same direction + from true
+            //change fromAxis to bound
+            double randomBtw = fRand(QPointF::dotProduct(lowestR, fromAxis),
+                    dist - QPointF::dotProduct(lowestR, fromAxis));
+            QPointF first = fromConnectorPos + randomBtw * fromMove;
+            turnPos.append(first);
+
+            double randomOut = fRand(verDist + QPointF::dotProduct(lowestR, toAxis),
+                                    verDist + QPointF::dotProduct(selfR, toAxis));
+            QPointF second = first + randomOut * toMove;
+            turnPos.append(second);
+            if (fromAxis.x() != 0) turnPos.append(QPointF(toConnectorPos.x(), second.y()));
+            else turnPos.append(QPointF(second.x(), toConnectorPos.y()));
+
+        } else if (!fromSide && toSide) { // same direction + to true
+            double randomSelf = fRand(QPointF::dotProduct(lowestR, fromAxis),
+                                      QPointF::dotProduct(selfR, fromAxis));
+            QPointF first = fromConnectorPos + randomSelf * fromMove;
+            turnPos.append(first);
+
+            double randomBtw = fRand(QPointF::dotProduct(lowestR, verMove),
+                                    verDist - QPointF::dotProduct(lowestR, verMove));
+            QPointF second = first - randomBtw * toMove;
+            turnPos.append(second);
+            if (fromAxis.x() != 0) turnPos.append(QPointF(toConnectorPos.x(), second.y()));
+            else turnPos.append(QPointF(second.x(), toConnectorPos.y()));
+
+        }
+        else { // back to back
+            double randomSelf = fRand(QPointF::dotProduct(lowestR, fromAxis),
+                                      QPointF::dotProduct(selfR, fromAxis));
+            QPointF first = fromConnectorPos + randomSelf * fromMove;
+            turnPos.append(first);
+
+            double randomOut = fRand(verDist + QPointF::dotProduct(lowestR, toAxis),
+                                    verDist + QPointF::dotProduct(selfR, toAxis));
+            QPointF second = first + randomOut * toMove;
+            turnPos.append(second);
+            if (fromAxis.x() != 0) turnPos.append(QPointF(toConnectorPos.x(), second.y()));
+            else turnPos.append(QPointF(second.x(), toConnectorPos.y()));
+
+
+        }
+
+    }
+
+    QList<ItemBase *> wireList;
+    ItemBase * nowWire = wireItem;
+    foreach(QPointF p, turnPos) {
+        Wire * w =  squareWire(nowWire, p);
+        nowWire = qobject_cast<ItemBase*>(w);
+        wireList.append(nowWire);
+    }
+    return wireList;
+}
+
+SketchWidget::ConnectorArrange SketchWidget::getConnectorArrange(ItemBase * itemBase, QPointF point) {
+    //Get 2 dianogals from rect of item
+    //TODO: check what bounding rect returns?
+
+    QRectF itemRect = itemBase->boundingRect();
+    QPointF pos = itemBase->pos();
+    bool diaTopLeft = isLeft(itemRect.topLeft()+pos, itemRect.bottomRight()+pos, point);
+    bool diaTopRight = isLeft(itemRect.topRight()+pos, itemRect.bottomLeft()+pos, point);
+    if (!diaTopLeft && diaTopRight) return ConnectorArrange::UP;
+    if (diaTopLeft && !diaTopRight) return ConnectorArrange::DOWN;
+    if (diaTopLeft && diaTopRight) return ConnectorArrange::LEFT;
+    if (!diaTopLeft && !diaTopRight) return ConnectorArrange::RIGHT;
+    return ConnectorArrange::UP;
+}
+
+
+
+//QPair<double, double> SketchWidget::calculateLineCoef(QRect itemRect) {
+
+//    double a, b;
+//    if (topLeft.x()-bottomRight.x() == 0) {
+//        a = 0;
+//        b = topLeft.y();
+
+//    } else {
+//        a = (topLeft.y()-bottomRight.y()) / (topLeft.x()-bottomRight-x());
+//        b = -(bottomRight.x()*topLeft.y())+(topLeft.x()*bottomRight.y());
+//        b /= (topLeft.x()-bottomRight.x());
+//    }
+//    return QPair<double, double>(a, b);
+//}
+
+void SketchWidget::selectModelSet(QSharedPointer<ModelSet> modelSet, bool transparent) {
+    if (transparent) addToModelSet(modelSet, transparent);
     else {
         QUndoCommand* parentCommand = new TemporaryCommand(tr("Add modelSet %1").arg(modelSet->keyTitle()));
         newAddModelSetCommand(modelSet, parentCommand);
@@ -280,7 +477,11 @@ void SketchWidget::addSetConnection(QSharedPointer<SetConnection> setconnection,
         if (to->isMicrocontroller() && from != m_breadBoardModelSet && breadboardPin != "") {
             QList<QString> vccConnectorIDList;
             vccConnectorIDList.append(breadboardPin);
-            QString vccConnectorID = findBreadBoardUnused(vccConnectorIDList, vccConnectorIDList, false);
+            //TODO: findBreadBoardNearest
+            ConnectorItem * ci = from->keyItem()->findConnectorItemWithSharedID(c.toTerminal);
+            QString vccConnectorID;
+            if (ci) vccConnectorID = findBreadBoardNearest(ci->sceneAdjustedTerminalPoint(NULL), vccConnectorIDList, vccConnectorIDList, false);
+            else vccConnectorID = findBreadBoardUnused(vccConnectorIDList, vccConnectorIDList, false);
             p2 = QPair<ItemBase *, QString>(m_breadBoardModelSet->keyItem(), vccConnectorID);
             p2List.append(p2);
         }
@@ -330,22 +531,41 @@ void SketchWidget::addSetConnection(QSharedPointer<SetConnection> setconnection,
 
         foreach(ItemBaseStringPair p, p2List) {
             ItemBase * wire = addSetWire(p1.first, p1.second, p.first, p.second, transparent);
+            ItemBase * finalWire = wire;
             if (!wire) continue;
-            //Wire * newW = squareWire(wire);
-            //if (!newW) continue;
-            //ItemBase * newWire = qobject_cast<ItemBase *>(newW);
+            QList<ItemBase *> newWireList = arrangeWire(wire, p1.first, p1.second, p.first, p.second);
+            ViewLayer::ViewLayerPlacement place;
             if (c.changeColor) {
                 Wire * w = qobject_cast<Wire *>(wire);
                 w->setColor(c.color, 1);
-                //newW->setColor(c.color, 1);
+                place = ViewLayer::specFromID(w->connector1()->attachedToViewLayerID());
             }
             //p1.first(item) -> id?, p1.second
             wire->setModelSet(to);
-            //newWire->setOpacity(wire->opacity());
-            //newWire->setModelSet(to);
-            setconnection->insertWireConnection(wire, p1.first->id(), p1.second, p.first->id(), p.second);
-            //setconnection->insertWireConnection(wire, );
             setconnection->appendWireList(wire);
+
+
+            foreach(ItemBase * wireI, newWireList) {
+                if (c.changeColor) {
+                    Wire * w = qobject_cast<Wire *>(wireI);
+                    w->setColor(c.color, 1);
+
+                }
+                wireI->setModelSet(to);
+                wireI->setOpacity(wire->opacity());
+                setconnection->appendWireList(wireI);
+                finalWire = wireI;
+
+            }
+            if (finalWire == wire) {
+                setconnection->insertWireConnection(wire, p1.first->id(), p1.second, p.first->id(), p.second);
+            } else {
+                setconnection->insertWireConnection(wire, p1.first->id(), p1.second, -1, "");
+                setconnection->insertWireConnection(finalWire, -1, "", p.first->id(), p.second);
+                changeConnection(p1.first->id(), p1.second, wire->id(), "connector0", place, true, false, true);
+                changeConnection(p.first->id(), p.second, finalWire->id(), "connector1", place, true, false, true);
+
+            }
             //setconnection->appendWireList(newWire);
             //TODO: wire store which set connection it belongs to
         }
@@ -595,7 +815,7 @@ ItemBase* SketchWidget::addSetWire(ItemBase * fromItem, const QString & fromConn
     if (transparent) wire->setOpacity(0.5);
 
     changeConnection(fromItem->id(), fromConnectorID, wireID, "connector0", ViewLayer::specFromID(fromConnectorItem->attachedToViewLayerID()), true, false, false);
-	changeConnection(toItem->id(), toConnectorID, wireID, "connector1",ViewLayer::specFromID(toConnectorItem->attachedToViewLayerID()), true, false, false);
+    changeConnection(toItem->id(), toConnectorID, wireID, "connector1",ViewLayer::specFromID(toConnectorItem->attachedToViewLayerID()), true, false, false);
 
     return wire;
 }
@@ -818,6 +1038,49 @@ QString SketchWidget::findBreadBoardUnused(QList<QString> connectorIDList, QList
     return "";
 }
 
+QString SketchWidget::findBreadBoardNearest(QPointF pos, QList<QString> connectorIDList, QList<QString> excludeConnectorIDList, bool checkConnected) {
+    if (m_breadBoardModelSet.isNull()) return "";
+    QList<ConnectorItem * > breadboardList;
+    ItemBase * breadboard = m_breadBoardModelSet->keyItem();
+    foreach(QString s, connectorIDList) {
+
+        ConnectorItem * connectorItem = breadboard->findConnectorItemWithSharedID(s);
+        QList<QPointer<ConnectorItem>> connectorItemList = connectorItem->connectedToItems();
+        if (connectorItemList.length() != 0 && checkConnected) continue;
+
+        bool connected = false;
+        QList<ConnectorItem *> connectorItems;
+        connectorItems.append(connectorItem);
+        ConnectorItem::collectEqualPotential(connectorItems, true, ViewGeometry::NoFlag);
+        foreach(ConnectorItem * citem, connectorItems) {
+            if (excludeConnectorIDList.contains(citem->connectorSharedID())) continue;
+            connectorItemList = citem->connectedToItems();
+            if (connectorItemList.length() == 0) return citem->connectorSharedID();
+            if (connectorItemList.length() != 0 && checkConnected) {
+                connected = true;
+                break;
+            }
+        }
+        if (!connected && checkConnected) {
+            breadboardList.append(connectorItem);
+        }
+
+    }
+    double minDist = 100000000;
+    ConnectorItem * minC = NULL;
+    foreach(ConnectorItem * ci, breadboardList) {
+        QPointF ciPos = ci->sceneAdjustedTerminalPoint(NULL);
+        double dist = QLineF(ciPos, pos).length();
+        if (dist < minDist) {
+            minDist = dist;
+            minC = ci;
+        }
+    }
+
+    if (minC) return minC->connectorSharedID();
+    return "";
+}
+
 void SketchWidget::completeSuggestion(QSharedPointer<ModelSet> modelset, bool transparent) {
     QList<QPair<ModelSet::Terminal, QString>> vccT = modelset->getPinTypeTerminal("VCC");
     QList<QPair<ModelSet::Terminal, QString>> gndT = modelset->getPinTypeTerminal("GND");
@@ -869,7 +1132,11 @@ void SketchWidget::completeSuggestion(QSharedPointer<ModelSet> modelset, bool tr
                 vccConnectorIDList.append("pin3W");
                 vccConnectorIDList.append("pin3Y");
             }
-            QString vccConnectorID = findBreadBoardUnused(vccConnectorIDList, vccConnectorIDList, false);
+            //TODO: findBreadBoardNearest
+            ConnectorItem * ci = modelset->keyItem()->findConnectorItemWithSharedID(pair.first.connectorID);
+            QString vccConnectorID;
+            if (ci) vccConnectorID = findBreadBoardNearest(ci->sceneAdjustedTerminalPoint(NULL), vccConnectorIDList, vccConnectorIDList, false);
+            else vccConnectorID = findBreadBoardUnused(vccConnectorIDList, vccConnectorIDList, false);
             //ItemBase * wire = addSetWire(modelset->getItem(pair.first.label), pair.first.connectorID, m_breadBoardModelSet->keyItem(), vccConnectorID, transparent);
             setconnection->appendConnection(vccConnectorID, pair.first.name, QColor(255, 0, 0));
             m_breadBoardModelSet->insertTerminalType(vccConnectorID, "VCC");
@@ -893,7 +1160,11 @@ void SketchWidget::completeSuggestion(QSharedPointer<ModelSet> modelset, bool tr
                 gndConnectorIDList.append("pin3X");
                 gndConnectorIDList.append("pin3Z");
             }
-            QString gndConnectorID = findBreadBoardUnused(gndConnectorIDList, gndConnectorIDList, false);
+            //TODO: findBreadBoardNearest
+            ConnectorItem * ci = modelset->keyItem()->findConnectorItemWithSharedID(pair.first.connectorID);
+            QString gndConnectorID;
+            if (ci) gndConnectorID = findBreadBoardNearest(ci->sceneAdjustedTerminalPoint(NULL), gndConnectorIDList, gndConnectorIDList, false);
+            else gndConnectorID = findBreadBoardUnused(gndConnectorIDList, gndConnectorIDList, false);
             //ItemBase * wire = addSetWire(modelset->getItem(pair.first.label), pair.first.connectorID, m_breadBoardModelSet->keyItem(), gndConnectorID, transparent);
             setconnection->appendConnection(gndConnectorID, pair.first.name, QColor(0, 0, 0));
             m_breadBoardModelSet->insertTerminalType(gndConnectorID, pair.second);
@@ -909,69 +1180,7 @@ void SketchWidget::completeSuggestion(QSharedPointer<ModelSet> modelset, bool tr
 
 }
 
-/*
-void SketchWidget::completeSuggestion(QSharedPointer<ModelSet> modelset, bool transparent) {
-    
 
-    QList<QPair<ModelSet::Terminal, QString>> vccT = modelset->getPinTypeTerminal("VCC");
-    QList<QPair<ModelSet::Terminal, QString>> gndT = modelset->getPinTypeTerminal("GND");
-
-    //if m_addedDefaultPart != NLL
-    if (modelset->isMicrocontroller()) {
-
-        //TODO: change --> save microcontroller field in db
-        QList<QString> vccConnectorIDList({"pin3W", "pin3Y"});
-        QList<QString> gndConnectorIDList({"pin3X", "pin3Z"});
-        QString vccConnectorID = findBreadBoardUnused(vccConnectorIDList, QList<QString>(), true);
-        QString gndConnectorID = findBreadBoardUnused(gndConnectorIDList, QList<QString>(), true);
-        DebugDialog::debug("Add Microcontroller!");
-        if (vccT.length() > 0 && vccConnectorID!="") {
-            TerminalStringPair vccPair = vccT[0];
-            foreach(TerminalStringPair pair, vccT) {
-                if (pair.second == "5V") {
-                    vccPair = pair;
-                    break;
-                }
-            }
-            ItemBase * wire = addSetWire(modelset->getItem(vccPair.first.label), vccPair.first.connectorID, m_addedDefaultPart, vccConnectorID, transparent);
-            Wire * w = qobject_cast<Wire *>(wire);
-            w->setColor(QColor(255, 0, 0), 1);
-            m_breadBoardModelSet->insertTerminalType("VCC", vccConnectorID);
-            m_breadBoardModelSet->insertTerminalType(vccPair.second, vccConnectorID);
-
-        }
-        if (gndT.length() > 0 && gndConnectorID!="") {
-            ItemBase * wire2 = addSetWire(modelset->getItem(gndT[0].first.label), gndT[0].first.connectorID, m_addedDefaultPart, gndConnectorID, transparent);
-            Wire * w2 = qobject_cast<Wire *>(wire2);
-            w2->setColor(QColor(0, 0, 0), 1);
-            m_breadBoardPin.insert("GND", gndConnectorID);
-        }
-    } else {
-
-        foreach (TerminalStringPair pair, vccT) {
-            if (m_breadBoardPin.contains(pair.second)) {
-                QString vccConnectorID = m_breadBoardPin[pair.second];
-                QList<QString> vccConnectorIDList;
-                vccConnectorIDList.append(vccConnectorID);
-                vccConnectorID = findBreadBoardUnused(vccConnectorIDList, vccConnectorIDList, false);
-                ItemBase * wire = addSetWire(modelset->getItem(pair.first.label), pair.first.connectorID, m_addedDefaultPart, vccConnectorID, transparent);
-            }
-        }
-
-        foreach (TerminalStringPair pair, gndT) {
-            if (m_breadBoardPin.contains(pair.second)) {
-                QString gndConnectorID = m_breadBoardPin[pair.second];
-                QList<QString> gndConnectorIDList;
-                gndConnectorIDList.append(gndConnectorID);
-                gndConnectorID = findBreadBoardUnused(gndConnectorIDList, gndConnectorIDList, false);
-                ItemBase * wire = addSetWire(modelset->getItem(pair.first.label), pair.first.connectorID, m_addedDefaultPart, gndConnectorID, transparent);
-            }
-        }
-
-    }
-
-}
-*/
 void SketchWidget::checkMousePressSuggestion(QGraphicsItem * item) {
 
     if (!m_prevModelSet.isNull()) findKeyItem(m_prevModelSet);
@@ -1064,12 +1273,13 @@ void SketchWidget::setOpacity(QSharedPointer<ModelSet> modelSet) {
             QPair<ModelSet::Terminal, ModelSet::Terminal> tpair = modelSet->getWireConnection(item);
             ModelSet::Terminal from = tpair.first;
             ModelSet::Terminal to = tpair.second;
-            if (from.label != "" && to.label != "") {
+            if (from.label != "") {
                 ItemBase * fromItem = modelSet->getItem(from.label);
-                ItemBase * toItem = modelSet->getItem(to.label);
                 changeConnection(fromItem->id(), from.connectorID, item->id(), "connector0", ViewLayer::specFromID(fromItem->findConnectorItemWithSharedID(from.connectorID)->attachedToViewLayerID()), true, false, false);
-                changeConnection(toItem->id(), to.connectorID, item->id(), "connector1",ViewLayer::specFromID(toItem->findConnectorItemWithSharedID(to.connectorID)->attachedToViewLayerID()), true, false, false);
-
+            }
+            if (to.label != "") {
+                ItemBase * toItem = modelSet->getItem(to.label);
+                changeConnection(toItem->id(), to.connectorID, item->id(), "connector1", ViewLayer::specFromID(toItem->findConnectorItemWithSharedID(to.connectorID)->attachedToViewLayerID()), true, false, false);
             }
         }
     }
@@ -1095,12 +1305,13 @@ void SketchWidget::setOpacity(QSharedPointer<SetConnection> setConnection) {
         QPair<ModelSet::Terminal, ModelSet::Terminal> tpair = setConnection->getWireConnection(item);
         ModelSet::Terminal from = tpair.first;
         ModelSet::Terminal to = tpair.second;
-        if (from.label != "" && to.label != "") {
+        if (from.label != "") {
             ItemBase * fromItem = fromModelSet->getItem(from.label);
-            ItemBase * toItem = toModelSet->getItem(to.label);
             changeConnection(fromItem->id(), from.connectorID, item->id(), "connector0", ViewLayer::specFromID(fromItem->findConnectorItemWithSharedID(from.connectorID)->attachedToViewLayerID()), true, false, false);
+        }
+        if (to.label != "") {
+            ItemBase * toItem = toModelSet->getItem(to.label);
             changeConnection(toItem->id(), to.connectorID, item->id(), "connector1",ViewLayer::specFromID(toItem->findConnectorItemWithSharedID(to.connectorID)->attachedToViewLayerID()), true, false, false);
-
         }
     }
     
