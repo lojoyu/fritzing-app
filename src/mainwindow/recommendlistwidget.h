@@ -37,8 +37,8 @@ public slots:
     void onItemEnteredSlot(QListWidgetItem*);
     void onItemClickedSlot(QListWidgetItem*);
 
-    void setTosetList(QList<QSharedPointer<ModelSet>> toModelsetList, QList<QSharedPointer<SetConnection>> setConnectionList, QList<QList<QString> *> tutorialLink, bool connection);
-    void setModelSetList(QList<QSharedPointer<ModelSet>> modelSetList);
+    void setTosetList(QList<QSharedPointer<ModelSet>> toModelsetList, QList<QSharedPointer<SetConnection>> setConnectionList, QList<QList<QString> *> tutorialLink, QList<double> percentageList, bool connection);
+    void setModelSetList(QList<QSharedPointer<ModelSet>> modelSetList, QList<double> percentageList);
     void clearList();
 
 protected:

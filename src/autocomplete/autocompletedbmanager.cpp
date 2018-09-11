@@ -163,6 +163,14 @@ QList<QList<QString> *> AutocompleteDBManager::getTutorialList(QList<long> ids, 
     return singleton->selectTutorialList(ids, max, sameModelset);
 }
 
+QList<int> AutocompleteDBManager::getCountFromConnections(QList<long> ids, bool sameModelset, bool sum) {
+    if (singleton == NULL) {
+        singleton = new AutocompleteDBManager(defaultname);
+    }
+    return singleton->selectCountFromConnections(ids, sameModelset, sum);
+}
+
+
 /*
 AutocompleteDBManager::getNextSet(QString title) {
 	if (singleton == NULL) {
@@ -175,7 +183,7 @@ AutocompleteDBManager::getNextSet(QString title) {
 QList<QMap<QString, QVariant> *> AutocompleteDBManager::selectModelSet(QString moduleID) {
     
     QList<QMap<QString, QVariant> *> resultList;
-    QString queryStr = QString("SELECT m.mcu_or_bat, mc.* FROM %1 mc "
+    QString queryStr = QString("SELECT m.mcu_or_bat, m.count, mc.* FROM %1 mc "
     "INNER JOIN %2 m "
     "ON mc.%3=m.id "
     "INNER JOIN %4 c "
@@ -303,6 +311,66 @@ QList<QPair<long, long>> AutocompleteDBManager::selectFrequentConnect(long setid
     return toList;
 }
 
+QList<int> AutocompleteDBManager::selectCountFromConnections(QList<long> ids, bool sameModelset, bool sum) {
+    QList<int> countList;
+    QString valueStr = "";
+    QString orderStr = "";
+    int ind = 1;
+    foreach(long id, ids) {
+        if (ind != 1) {
+            valueStr += ",";
+            orderStr += ",";
+        }
+        valueStr += QString("%1").arg(id);
+        if (!sameModelset) orderStr += QString("c.id=%1 DESC").arg(id);
+        else orderStr += QString("x.id=%1 DESC").arg(id);
+        ind++;
+    }
+    DebugDialog::debug(valueStr);
+    DebugDialog::debug(orderStr);
+
+    QString queryStr;
+    if (sum) {
+        queryStr = QString("SELECT SUM(c.count) FROM connections c "
+                           "INNER JOIN ( "
+                           "SELECT * FROM connections WHERE id in (%1) "
+                           ") AS x "
+                           "ON x.module_id = c.module_id AND x.to_module_id = c.to_module_id "
+                           "GROUP BY c.module_id "
+                           "ORDER BY %2").arg(valueStr).arg(orderStr);
+
+    } else if (!sameModelset) {
+        queryStr = QString("SELECT c.count FROM connections c "
+                            "WHERE c.id IN (%1) "
+                            "ORDER BY %2").arg(valueStr).arg(orderStr);
+    } else {
+        queryStr = QString("SELECT SUM(c.count) FROM connections c "
+                           "INNER JOIN ( "
+                           "SELECT * FROM connections WHERE id in (%1) "
+                           ") AS x "
+                           "ON x.module_id = c.module_id AND x.to_module_id = c.to_module_id "
+                           "GROUP BY c.module_id, c.to_module_id "
+                           "ORDER BY %2").arg(valueStr).arg(orderStr);
+
+    }
+
+    QSqlQuery query(m_database);
+    query.prepare(queryStr);
+    //query.bindValue(":values",valueStr);
+    if (query.exec()) {
+        while(query.next()) {
+            countList.append(query.value(0).toInt());
+        }
+
+    } else {
+        m_debugExec(QString("couldn't find connection of %1").arg(valueStr), query);
+    }
+    return countList;
+
+}
+
+
+
 QList<QMap<QString, QVariant> *> AutocompleteDBManager::selectConnectionsByID(QList<long> ids) {
     QList<QMap<QString, QVariant> *> mapList;
 
@@ -396,7 +464,7 @@ QList<QMap<QString, QVariant> *> AutocompleteDBManager::selectModelSetsByID(QLis
 //    "WHERE module_id IN (%1) "
 //    "ORDER BY %2").arg(valueStr).arg(orderStr);
 
-    QString queryStr = QString("SELECT c.module_fid, m.mcu_or_bat, mc.* FROM modules_components mc "
+    QString queryStr = QString("SELECT c.module_fid, m.mcu_or_bat, m.count, mc.* FROM modules_components mc "
     "INNER JOIN modules m ON m.id=mc.module_id "
     "INNER JOIN components c ON c.id=m.component_id "
     "WHERE mc.module_id IN (%1) "

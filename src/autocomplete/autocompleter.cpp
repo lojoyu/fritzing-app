@@ -121,12 +121,21 @@ void AutoCompleter::getSuggestionSetSelf(ItemBase * item, SketchWidget * sketchW
 
     QString moduleID = item->moduleID();
     QList<QMap<QString, QVariant> *> resultList = AutocompleteDBManager::getModelSet(moduleID);
-    QList<QSharedPointer<ModelSet>> modelSetList;
+    QList<QSharedPointer<ModelSet>> modelSetList; // add count
     mapListToModelSet(item, sketchWidget, resultList, modelSetList);
     qDeleteAll(resultList);
     resultList.clear();
+    QList<double> percentageList;
+    double total = 0;
+    foreach(QSharedPointer<ModelSet> ms, modelSetList) {
+        total += ms->count();
+    }
+    foreach(QSharedPointer<ModelSet> ms, modelSetList) {
+        percentageList.append(ms->count()/total);
+    }
     if (modelSetList.length() > 0) {
-        emit addModelSetSignal(modelSetList);
+
+        emit addModelSetSignal(modelSetList, percentageList);
         // if (modelSetList.length() == 1 && modelSetList[0]->single()){
         //     sketchWidget->selectModelSet(modelSetList[0], true);
         //     //emit addModelSetSignal(modelSetList);
@@ -171,7 +180,7 @@ void AutoCompleter::mapListToModelSet(ItemBase * keyItem, SketchWidget * sketchW
             }
             modelSetList.append(modelSet);
             modelSet->setSingle(true);
-
+            modelSet->setCount(map["count"].toInt());
         }
         //TODO: Handling NULL
         QString title1 = map["component_title"].toString();
@@ -279,7 +288,7 @@ void AutoCompleter::getSuggestionNextSelf(QSharedPointer<ModelSet> modelset, Ske
     long setid = modelset->setId();
     QList<QPair<long, long>> toList = AutocompleteDBManager::getFrequentConnect(setid, m_maxSuggestion, nameList);
     if (toList.length() == 0) { // what?
-        emit addSetConnectionSignal(toModelsetList, setConnectionList, QList<QList<QString> *>(), false);
+        emit addSetConnectionSignal(toModelsetList, setConnectionList, QList<QList<QString> *>(), QList<double>(), false);
         return;
     }
     QList<long> idList;
@@ -291,17 +300,22 @@ void AutoCompleter::getSuggestionNextSelf(QSharedPointer<ModelSet> modelset, Ske
     QList<QMap<QString, QVariant> *> connectionList = AutocompleteDBManager::getConnectionsByID(idList);
     QList<QMap<QString, QVariant> *> modelsetMapList = AutocompleteDBManager::getModelSetsByID(moduleList);
     QList<QList<QString> *> tutorialList = AutocompleteDBManager::getTutorialList(idList, 20, true);
-
+    QList<int> countList = AutocompleteDBManager::getCountFromConnections(idList, true, false);
     mapListToModelSet(NULL, sketchWidget, modelsetMapList, toModelsetList);
     expandModelSetList(moduleList, toModelsetList);
     mapListToSetConnection(modelset, toModelsetList, connectionList, setConnectionList, true);
     qDeleteAll(connectionList);
     qDeleteAll(modelsetMapList);
+    QList<double> percentageList;
+
+    foreach(int c, countList) {
+        percentageList.append((double)c/(double)modelset->count());
+    }
 
     connectionList.clear();
     modelsetMapList.clear();
-
-    emit addSetConnectionSignal(toModelsetList, setConnectionList, tutorialList, false);
+    //TODO: count star: modelsetF+modelsetT / modelsetF
+    emit addSetConnectionSignal(toModelsetList, setConnectionList, tutorialList, percentageList, false);
    // mw->setTosetList(toModelsetList, setConnectionList);
     //sketchWidget->addSetToSet(toModelsetList[0], setConnectionList[0], true);
 
@@ -322,7 +336,7 @@ void AutoCompleter::getSuggestionExistSelf(QSharedPointer<ModelSet> modelset, Sk
 
     qDeleteAll(connectionList);
     connectionList.clear();
-    emit addSetConnectionSignal(existModelset, setConnectionList, QList<QList<QString>*>(), false);
+    //emit addSetConnectionSignal(existModelset, setConnectionList, QList<QList<QString>*>(), false);
 
 }
 
@@ -359,12 +373,23 @@ void AutoCompleter::getSuggestionConnectionSelf(QSharedPointer<ModelSet> fromMod
     existModelset.append(toModelset);
     QList<long> ids = mapListToSetConnection(fromModelset, existModelset, connectionList, setConnectionList, false);
     QList<QList<QString> *> tutorialList = AutocompleteDBManager::getTutorialList(ids, 20);
+    QList<int> countList = AutocompleteDBManager::getCountFromConnections(ids, false, false);
+    QList<double> percentageList;
 
     qDeleteAll(connectionList);
     connectionList.clear();
+    double total = 0;
+    foreach(int c, countList) {
+        total += c;
+    }
+    foreach(int c, countList) {
+        percentageList.append((double)c/(double)total);
+    }
+
     if (setConnectionList.length() > 0) {
         //sketchWidget->addSetToSet(toModelset, setConnectionList[0], false, true);
-        emit addSetConnectionSignal(existModelset, setConnectionList, tutorialList, true);
+        //TODO: count star: connection/modelSet+modelSet
+        emit addSetConnectionSignal(existModelset, setConnectionList, tutorialList, percentageList, true);
     }
 }
 

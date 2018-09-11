@@ -370,6 +370,14 @@ QList<QPair<QString, QString>> ModelSet::getConnectedPairWithModelSet(QSharedPoi
     return connectedPairList;
 }
 
+void ModelSet::setCount(int count) {
+    m_count = count;
+}
+
+int ModelSet::count() {
+    return m_count;
+}
+
 
 
 /**********************

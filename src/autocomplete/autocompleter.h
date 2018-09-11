@@ -32,8 +32,8 @@ public:
     static void clearRecommend();
 
 signals:
-    void addModelSetSignal(QList<QSharedPointer<ModelSet>>);
-    void addSetConnectionSignal(QList<QSharedPointer<ModelSet>>, QList<QSharedPointer<SetConnection>> setConnectionList, QList<QList<QString> *> tutorialList, bool connection);
+    void addModelSetSignal(QList<QSharedPointer<ModelSet>>, QList<double>);
+    void addSetConnectionSignal(QList<QSharedPointer<ModelSet>>, QList<QSharedPointer<SetConnection>> setConnectionList, QList<QList<QString> *> tutorialList, QList<double> percentageList, bool connection);
     void clearRecommendListSignal();
 
 protected:

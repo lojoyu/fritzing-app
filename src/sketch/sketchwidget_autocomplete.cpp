@@ -405,7 +405,7 @@ void SketchWidget::addSetToSet(QSharedPointer<ModelSet> modelSet, QSharedPointer
     findKeyItem(from);
     if (from->keyItem()!=NULL) {
         m_tempPoint = from->keyItem()->getViewGeometry().loc()+from->keyItem()->boundingRect().center();
-        m_tempPoint = m_tempPoint-QPoint(90, 0);
+        m_tempPoint = m_tempPoint-QPoint(120, 0);
     }
     addModelSet(modelSet, transparent);
     addSetConnection(modelSet->breadboardConnection(), transparent);
@@ -1220,7 +1220,17 @@ void SketchWidget::checkSelectSuggestion() {
     }
 
     if (!m_autoComplete || m_pressModelSet.isNull()) return;
-    if (m_pressModelSet != m_prevModelSet) removePrevModelSet();
+    if (m_pressModelSet != m_prevModelSet) {
+        if (!m_prevModelSet.isNull()) {
+            QSharedPointer<SetConnection> prevSetConnection = m_prevModelSet->setConnection();
+            if (!prevSetConnection.isNull()) {
+                if (prevSetConnection->getFromModelSet() == m_pressModelSet) {
+                    newAddSetConnectionCommand(prevSetConnection, NULL);
+                }
+            }
+        }
+        removePrevModelSet();
+    }
     QSharedPointer<SetConnection> setConnection = m_pressModelSet->setConnection();
     if (!m_pressModelSet->isConfirm()) {
         //confirm!

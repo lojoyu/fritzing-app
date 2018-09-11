@@ -13,6 +13,11 @@
 #include "../infoview/htmlinfoview.h"
 #include "../debugdialog.h"
 
+static QString BlackStar("★");
+static QString WhiteStar("☆");
+//٭
+//QChar(0xe2 0x98 0x85)
+
 RecommendListWidget::RecommendListWidget(SketchWidget * sketchWidget, QPointer<ReferenceModel> referenceModel, QListWidget * tutorialList, QWidget *parent) {
 	m_sketchwidget = sketchWidget;
     m_referenceModel = referenceModel;
@@ -25,10 +30,10 @@ RecommendListWidget::RecommendListWidget(SketchWidget * sketchWidget, QPointer<R
 
     AutoCompleter * autocompleter = AutoCompleter::getAutoCompleter();
 
-    connect(autocompleter, SIGNAL(addModelSetSignal(QList<QSharedPointer<ModelSet>>)),
-                       this, SLOT(setModelSetList(QList<QSharedPointer<ModelSet>>)));
-    connect(autocompleter, SIGNAL(addSetConnectionSignal(QList<QSharedPointer<ModelSet>>, QList<QSharedPointer<SetConnection>>, QList<QList<QString> *>, bool)),
-                       this, SLOT(setTosetList(QList<QSharedPointer<ModelSet>>, QList<QSharedPointer<SetConnection>>, QList<QList<QString> *>, bool))) ;
+    connect(autocompleter, SIGNAL(addModelSetSignal(QList<QSharedPointer<ModelSet>>, QList<double>)),
+                       this, SLOT(setModelSetList(QList<QSharedPointer<ModelSet>>, QList<double>)));
+    connect(autocompleter, SIGNAL(addSetConnectionSignal(QList<QSharedPointer<ModelSet>>, QList<QSharedPointer<SetConnection>>, QList<QList<QString> *>, QList<double>, bool)),
+                       this, SLOT(setTosetList(QList<QSharedPointer<ModelSet>>, QList<QSharedPointer<SetConnection>>, QList<QList<QString> *>, QList<double>, bool))) ;
 
     connect(autocompleter, SIGNAL(clearRecommendListSignal()), this, SLOT(clearList()));
 }
@@ -125,7 +130,7 @@ void RecommendListWidget::onItemEnteredSlot(QListWidgetItem* listitem){
 }
 
 void RecommendListWidget::setTosetList(QList<QSharedPointer<ModelSet>> toModelsetList, QList<QSharedPointer<SetConnection>> setConnectionList,
-                                       QList<QList<QString> *> tutorialLink, bool connection){
+                                       QList<QList<QString> *> tutorialLink, QList<double> percentageList, bool connection){
 
     //m_recommendlist->clear();
     clear();
@@ -152,21 +157,24 @@ void RecommendListWidget::setTosetList(QList<QSharedPointer<ModelSet>> toModelse
         item->setSizeHint(QSize(50,60));
         //m_recommendlist->insertItem(i, item) ;
         insertItem(i, item);
+        double percentage = percentageList[i];
+        QString text = QString("%1").arg(BlackStar);
+        if (percentage > 0.1) text += BlackStar;
+        if (percentage > 0.05) text += BlackStar;
 
-        //QLabel * label = new QLabel();
-        /*
-        label->setAlignment(Qt::AlignCenter);
-        label->setText("<a href=\"https://github.com/lojoyu/fritzing-app\">github");
-        label->setOpenExternalLinks(true);*/
-        //m_recommendlist->setItemWidget(m_recommendlist->item(i),label);
-        //setItemWidget(this->item(i), label);
+        item->setText(QString("%1").arg(text));
+
+        QFont f = item->font();
+        f.setPointSize(8);
+        item->setFont(f);
+        item->setTextColor(QColor(252, 193, 0));
     }
     if (connection) {
         m_sketchwidget->selectSetToSet(toModelsetList[0], setConnectionList[0], true, true);
     }
 }
 
-void RecommendListWidget::setModelSetList(QList<QSharedPointer<ModelSet>> modelSetList){
+void RecommendListWidget::setModelSetList(QList<QSharedPointer<ModelSet>> modelSetList, QList<double> percentageList){
 
     clear();
     m_tutorial->clear();
@@ -181,15 +189,25 @@ void RecommendListWidget::setModelSetList(QList<QSharedPointer<ModelSet>> modelS
         loadImage(modelPart,item);
         item->setData(Qt::UserRole, itemData);
         item->setSizeHint(QSize(50,60));
+        double percentage = percentageList[i];
+        QString text = QString("%1").arg(BlackStar);
+        if (percentage > 0.4) text += BlackStar;
+        if (percentage > 0.1) text += BlackStar;
+
+        item->setText(QString("%1").arg(text));
         //m_recommendlist->insertItem(i ,item) ;
         insertItem(i, item);
+        QFont f = item->font();
+        f.setPointSize(8);
+        item->setFont(f);
+        item->setTextColor(QColor(252, 193, 0));
 
 //        QLabel * label = new QLabel();
-//        label->setAlignment(Qt::AlignCenter);
-//        label->setText("<a href=\"https://github.com/lojoyu/fritzing-app\">github");
-//        label->setOpenExternalLinks(true);
-//        //m_recommendlist->setItemWidget(m_recommendlist->item(i),label);
+//        label->setAlignment(Qt::AlignLeft);
+//        label->setText(QString("%1").arg(percentage));
 //        setItemWidget(this->item(i), label);
+
+
     }
     bool next = this->count() > 1 ? false : true;
     m_sketchwidget->selectModelSet(modelSetList[0], true, next);

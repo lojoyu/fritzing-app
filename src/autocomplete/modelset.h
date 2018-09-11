@@ -113,7 +113,8 @@ public:
     QSharedPointer<SetConnection> getSetConnectionWithModelSet(QSharedPointer<ModelSet> modelset);
     QList<QPair<QString, QString>> getConnectedPairWithModelSet(QSharedPointer<ModelSet> modelSet);
     QSet<QString> getConnectedNameWithModelSet(QSharedPointer<ModelSet> modelSet);
-
+    void setCount(int count);
+    int count();
 
 
 protected:
@@ -140,6 +141,7 @@ protected:
     bool m_confirm;
     QHash<ItemBase *, TerminalPair> m_wireConnection;
     bool m_isMicrocontroller;
+    int m_count;
 
 };
 
