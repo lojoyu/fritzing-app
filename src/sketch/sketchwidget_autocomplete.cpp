@@ -474,6 +474,7 @@ void SketchWidget::addSetConnection(QSharedPointer<SetConnection> setconnection,
             continue;
         }
 
+        QList<QPair<ItemBase *, QString>> p1List;
         QList<QPair<ItemBase *, QString>> p2List;
 
         if (to->isMicrocontroller() && from != m_breadBoardModelSet && breadboardPin != "") {
@@ -488,6 +489,7 @@ void SketchWidget::addSetConnection(QSharedPointer<SetConnection> setconnection,
             } else vccConnectorID = findBreadBoardUnused(vccConnectorIDList, vccConnectorIDList, false);
             p2 = QPair<ItemBase *, QString>(m_breadBoardModelSet->keyItem(), vccConnectorID);
             p2List.append(p2);
+            p1List.append(p1);
         }
 //        else if (to->isMicrocontroller() && breadboardT.length() > 0 && from != m_breadBoardModelSet) {
 //            // if connect to microcontroller and already has pin type
@@ -515,14 +517,33 @@ void SketchWidget::addSetConnection(QSharedPointer<SetConnection> setconnection,
             }
             p2 = QPair<ItemBase *, QString>(to->keyItem(), connectorID);
             p2List.append(p2);
+            p1List.append(p1);
 
         }
         else if (to->isMicrocontroller() || from != m_breadBoardModelSet) {
             p2 = to->getItemAndCID(c.toTerminal);
             p2List.append(p2);
-        } else {
+            p1List.append(p1);
+        } else { // from == breadBoard and to != micro
+
             p2List = to->getItemAndCIDAll(c.toTerminal);
-            if (p2List.length() > 0) p2 = p2List[0];
+            if (p2List.length() > 0) {
+                p2 = p2List[0];
+                foreach(ItemBaseStringPair isp, p2List) {
+                    QList<QString> vccConnectorIDList;
+                    vccConnectorIDList.append(c.fromTerminal);
+
+                    ConnectorItem * ci = isp.first->findConnectorItemWithSharedID(isp.second);
+                    QString vccConnectorID;
+                    if (ci) {
+                        nearestBreadBoard = true;
+                        vccConnectorID = findBreadBoardNearest(ci->sceneAdjustedTerminalPoint(NULL), vccConnectorIDList, vccConnectorIDList, false);
+                    } else vccConnectorID = findBreadBoardUnused(vccConnectorIDList, vccConnectorIDList, false);
+                    p1 = QPair<ItemBase*, QString>(m_breadBoardModelSet->keyItem(), vccConnectorID);
+                    p1List.append(p1);
+                }
+
+            }
             else p2 = QPair<ItemBase*, QString>();
         }
 
@@ -532,8 +553,10 @@ void SketchWidget::addSetConnection(QSharedPointer<SetConnection> setconnection,
         DebugDialog::debug(QString("p2: %1").arg(p2.first->title()));
 
         //TODO: change wire connection;
-
+        int i = 0;
         foreach(ItemBaseStringPair p, p2List) {
+            p1 = p1List[i];
+            i++;
             ItemBase * wire = addSetWire(p1.first, p1.second, p.first, p.second, transparent);
             ItemBase * finalWire = wire;
             if (!wire) continue;
@@ -1145,9 +1168,9 @@ void SketchWidget::completeSuggestion(QSharedPointer<ModelSet> modelset, bool tr
             }
             //TODO: findBreadBoardNearest
             ConnectorItem * ci = modelset->keyItem()->findConnectorItemWithSharedID(pair.first.connectorID);
-            QString vccConnectorID;
-            if (ci) vccConnectorID = findBreadBoardNearest(ci->sceneAdjustedTerminalPoint(NULL), vccConnectorIDList, vccConnectorIDList, false);
-            else vccConnectorID = findBreadBoardUnused(vccConnectorIDList, vccConnectorIDList, false);
+            QString vccConnectorID = vccConnectorIDList[0];
+            //if (ci) vccConnectorID = findBreadBoardNearest(ci->sceneAdjustedTerminalPoint(NULL), vccConnectorIDList, vccConnectorIDList, false);
+            //else vccConnectorID = findBreadBoardUnused(vccConnectorIDList, vccConnectorIDList, false);
             //ItemBase * wire = addSetWire(modelset->getItem(pair.first.label), pair.first.connectorID, m_breadBoardModelSet->keyItem(), vccConnectorID, transparent);
             setconnection->appendConnection(vccConnectorID, pair.first.name, QColor(255, 0, 0));
             m_breadBoardModelSet->insertTerminalType(vccConnectorID, "VCC");
@@ -1419,7 +1442,7 @@ void SketchWidget::updateModelSetPos(QPoint pos) {
         }
 
     }
-    DebugDialog::debug(QString("see! %1~~~~~~~~").arg(useOrigin));
+
     if (useOrigin) return;
 
     if (m_prevModelSet != m_dragModelSet) {
