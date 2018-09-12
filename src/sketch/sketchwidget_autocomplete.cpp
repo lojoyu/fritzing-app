@@ -547,7 +547,6 @@ void SketchWidget::addSetConnection(QSharedPointer<SetConnection> setconnection,
             else p2 = QPair<ItemBase*, QString>();
         }
 
-
         if (p1.first == NULL|| p2.first == NULL || p1.second == "" ||  p2.second == "") continue;
         DebugDialog::debug(QString("p1: %1").arg(p1.first->title()));
         DebugDialog::debug(QString("p2: %1").arg(p2.first->title()));
@@ -1105,7 +1104,14 @@ QString SketchWidget::findBreadBoardNearest(QPointF pos, QList<QString> connecto
     foreach(ConnectorItem * ci, breadboardList) {
         QPointF ciPos = ci->sceneAdjustedTerminalPoint(NULL);
         double dist = QLineF(ciPos, pos).length();
-        if (dist < minDist && ci->attachedTo() == m_breadBoardModelSet->keyItem()) {
+        QString ciId = ci->connectorSharedID();
+        bool breadboardUPDOWN = false;
+        QRegularExpression re(QString("[W-Z]$"));
+        QRegularExpressionMatch match = re.match(ciId);
+        if (match.hasMatch()) {
+            breadboardUPDOWN = true;
+        }
+        if (dist < minDist && ci->attachedTo() == m_breadBoardModelSet->keyItem() && breadboardUPDOWN) {
             minDist = dist;
             minC = ci;
         }
