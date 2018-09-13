@@ -1252,7 +1252,7 @@ void SketchWidget::checkSelectSuggestion() {
     if (m_pressModelSet != m_prevModelSet) {
         if (!m_prevModelSet.isNull()) {
             QSharedPointer<SetConnection> prevSetConnection = m_prevModelSet->setConnection();
-            if (!prevSetConnection.isNull()) {
+            if (m_prevModelSet->isConfirm() && !prevSetConnection.isNull()) {
                 if (prevSetConnection->getFromModelSet() == m_pressModelSet) {
                     newAddSetConnectionCommand(prevSetConnection, NULL);
                 }
