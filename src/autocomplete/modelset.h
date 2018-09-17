@@ -81,6 +81,7 @@ public:
 	QPair<ItemBase *, QString> getItemAndCID2(long terminalId);
 	QPair<ItemBase *, QString> getItemAndCID(QString terminalname);
     QList<QPair<ItemBase*, QString>> getItemAndCIDAll(QString terminalName);
+    QString getConnectorID(QString terminalName);
 	QString genLabelHashKey(Terminal t);
     ItemBase * keyItem();
     void setSingle(bool b);
@@ -154,6 +155,9 @@ public:
         QString toTerminal;
 		QColor color;
 		bool changeColor;
+        QString fromCID;
+        QString toCID;
+
 		Connection():Connection("", "") {};
 		Connection(QString fromT, QString toT):Connection(fromT, toT, QColor(0, 0, 0), false) {};
 		Connection(QString fromT, QString toT, QColor c, bool b) {
@@ -162,7 +166,31 @@ public:
 			color = c;
 			changeColor = b;
 		}
+
+        void setFromCID(QSharedPointer<ModelSet> from) {
+            fromCID = from->getConnectorID(fromTerminal);
+        }
+        void setToCID(QSharedPointer<ModelSet> to) {
+            toCID = to->getConnectorID(toTerminal);
+        }
+
+        void setCID(QSharedPointer<ModelSet> from, QSharedPointer<ModelSet> to) {
+            setFromCID(from);
+            setToCID(to);
+        }
+
+        bool operator<(const Connection& other) const {
+            if (fromCID.length() < other.fromCID.length()) return true;
+            else if (fromCID.length() > other.fromCID.length()) return false;
+            if (fromCID < other.fromCID) return true;
+            if (fromCID == other.fromCID) {
+                if (toCID.length() < other.toCID.length()) return true;
+                return toCID < other.toCID;
+            }
+            return false;
+        }
 	};
+
 	SetConnection();
 	SetConnection(QSharedPointer<ModelSet> m1, QSharedPointer<ModelSet> m2);
 	~SetConnection();
@@ -187,6 +215,8 @@ public:
     QPair<ModelSet::Terminal, ModelSet::Terminal> getWireConnection(ItemBase* item);
     void setModelSet(int ind, QSharedPointer<ModelSet> m);
     QString getConnectedTo(int ind, QString name);
+    void sortConnectionList();
+    static bool compareConnectionFrom(const Connection &c1, const Connection &c2);
 
 protected:
 	QSharedPointer<ModelSet> m_fromModelSet;

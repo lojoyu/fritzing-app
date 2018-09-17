@@ -184,6 +184,11 @@ QList<QPair<ItemBase*, QString>> ModelSet::getItemAndCIDAll(QString terminalName
     return getList;
 }
 
+QString ModelSet::getConnectorID(QString terminalName) {
+    if (m_terminalnameHash.contains(terminalName)) return m_terminalnameHash[terminalName][0].connectorID;
+    else return "";
+}
+
 
 QString ModelSet::getPinType(QString connectorID) {
     if (m_terminalType.contains(connectorID)) {
@@ -520,17 +525,33 @@ void SetConnection::appendConnection2(long id1, long id2) {
 
 void SetConnection::appendConnection(QString name1, QString name2) {
     Connection c(name1, name2);
+    c.setCID(m_fromModelSet, m_toModelSet);
     m_connectionList.append(c);
 }
 
 void SetConnection::appendConnection(QString name1, QString name2, QColor color) {
     Connection c(name1, name2, color, true);
+    c.setCID(m_fromModelSet, m_toModelSet);
     m_connectionList.append(c);
 }
 
 void SetConnection::appendConnection(QString name1, QString name2, QColor color, bool changeColor) {
     Connection c(name1, name2, color, changeColor);
+    c.setCID(m_fromModelSet, m_toModelSet);
     m_connectionList.append(c);
+}
+
+bool SetConnection::compareConnectionFrom(const Connection &c1, const Connection &c2) {
+ return c1.fromTerminal < c2.fromTerminal;
+}
+
+//bool SetConnection::compareConnectionTo(const Connection &c1, const Connection &c2) {
+// return c1.toTerminal < c2.toTerminal;
+//}
+
+void SetConnection::sortConnectionList() {
+    //qSort(m_connectionList.begin(), m_connectionList.end(), compareConnectionFrom);
+    qSort(m_connectionList);
 }
 
 QList<ItemBase *> SetConnection::getWireList() {

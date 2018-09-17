@@ -593,6 +593,18 @@ QList<QMap<QString, QVariant> *> AutocompleteDBManager::selectConnectionsBetween
     "WHERE c.module_id = %1 AND c.to_module_id = %2 %4"
     "ORDER BY c.count DESC, c.id").arg(mid1).arg(mid2).arg(concatStr).arg(excludeStr);
 
+//      QString queryStr = QString("SELECT c.*, tc.*, mc.component_terminal, mc.to_component_terminal FROM terminals_connections tc "
+//        "INNER JOIN connections c ON c.id = tc.connection_id "
+//        "INNER JOIN "
+//        "( SELECT DISTINCT(connection_id), group_concat('-' || terminal_id || to_terminal_id || '-', ', ') as con "
+//        "FROM terminals_connections group by connection_id ) x "
+//        "ON c.id = x.connection_id %3 "
+//        "INNER JOIN modules_components mc "
+//        "ON (mc.module_id = %1 AND mc.name = tc.terminal_id) "
+//        "OR (mc.module_id=%2 AND mc.name = tc.to_terminal_id) "
+//        "WHERE c.module_id = %1 AND c.to_module_id = %2 %4"
+//        "ORDER BY c.count DESC, c.id, mc.component_terminal, mc.to_component_terminal").arg(mid1).arg(mid2).arg(concatStr).arg(excludeStr);
+
 
     DebugDialog::debug(QString("queryString : %1").arg(queryStr));
 

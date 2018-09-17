@@ -145,6 +145,7 @@ void RecommendListWidget::setTosetList(QList<QSharedPointer<ModelSet>> toModelse
         else itemData.append(QVariant(SuggestionType::connection));
         itemData.append(QVariant::fromValue(toModelsetList[i]));
         itemData.append(QVariant::fromValue(setConnectionList[i]));
+
         QVariantList variantList;
         if (tutorialLink.length() > i) {
             foreach(QString str, *(tutorialLink[i])) {
@@ -161,6 +162,8 @@ void RecommendListWidget::setTosetList(QList<QSharedPointer<ModelSet>> toModelse
         insertItem(i, item);
         double percentage = percentageList[i];
         QString text = QString("%1").arg(BlackStar);
+        if (percentage > 0.3) text += BlackStar;
+        if (percentage > 0.2) text += BlackStar;
         if (percentage > 0.1) text += BlackStar;
         if (percentage > 0.05) text += BlackStar;
 
@@ -194,6 +197,8 @@ void RecommendListWidget::setModelSetList(QList<QSharedPointer<ModelSet>> modelS
         double percentage = percentageList[i];
         QString text = QString("%1").arg(BlackStar);
         if (percentage > 0.4) text += BlackStar;
+        if (percentage > 0.3) text += BlackStar;
+        if (percentage > 0.2) text += BlackStar;
         if (percentage > 0.1) text += BlackStar;
 
         item->setText(QString("%1").arg(text));

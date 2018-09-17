@@ -842,7 +842,7 @@ protected:
     bool isLeft(QPointF p1, QPointF p2, QPointF pin);
     double fRand(double fMin, double fMax);
     QString findBreadBoardNearest(QPointF pos, QList<QString> connectorIDList, QList<QString> excludeConnectorIDList, bool checkConnected);
-
+    void calculatePos(QSharedPointer<ModelSet> modelSet);
 
 protected:
 	bool m_autoComplete;
@@ -857,6 +857,7 @@ protected:
     bool m_draggingSuggestion = false;
     bool m_breadBoardGnd = false;
     ItemBase * m_pressItem = NULL;
+    QList<QPointF> m_prevRandom;
 
 };
 

@@ -264,6 +264,9 @@ QList<long> AutoCompleter::mapListToSetConnection(QSharedPointer<ModelSet> model
         }
 
     }
+    foreach(QSharedPointer<SetConnection> sc, setConnectionList) {
+        sc->sortConnectionList();
+    }
     return idList;
 }
 
