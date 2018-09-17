@@ -111,7 +111,9 @@ void RecommendListWidget::onItemEvent(QListWidgetItem* listitem, bool hover) {
             QString str = tList[i].value<QString>();
             QLabel * label = new QLabel();
             label->setAlignment(Qt::AlignLeft);
-            label->setText(QString("<a href='%1'>tutorial %2</a>").arg(str).arg(i));
+            // label->setText(QString("<a href='%1'>tutorial %2</a>").arg(str).arg(i));
+            QString title = str.split("/").last().replace("-", " ");
+            label->setText(QString("<a href='%1'>%2</a>").arg(str).arg(title));
             label->setOpenExternalLinks(true);
             //layout->addWidget(label);
             QListWidgetItem* item = new QListWidgetItem();
