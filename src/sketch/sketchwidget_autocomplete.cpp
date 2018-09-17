@@ -41,7 +41,6 @@ void SketchWidget::autocompleteInit() {
         m_breadBoardModelSet->insertTerminalnameHash(connectorItem->connectorSharedID(), t1);
     }
     m_breadBoardGnd = false;
-    //testWire();
 
 }
 
@@ -58,7 +57,12 @@ void SketchWidget::testWire() {
     ItemBase * wireItem = addItemAuxTemp(wirePart, defaultViewLayerPlacement(wirePart), viewGeometryWire, wireID, true, m_viewID, true);
 
     Wire * wire = qobject_cast<Wire *>(wireItem);
-    wire->setColor(QColor(255, 0, 0), 1);
+    if (wire) {
+        wire->setColorString("red", 1, true);
+        //wire->setColor(QColor(255, 0, 0), 1);
+        updateInfoView();
+    }
+    //wire->setColor(QColor(255, 0, 0), 1);
 
     //wire->connector0()->connectTo(m_addedDefaultPart->findConnectorItemWithSharedID("pin3W"));
     changeConnection(m_addedDefaultPart->id(), "pin3W", wireID, "connector0", defaultViewLayerPlacement(wirePart), true, false, false);
@@ -566,7 +570,12 @@ void SketchWidget::addSetConnection(QSharedPointer<SetConnection> setconnection,
             ViewLayer::ViewLayerPlacement place;
             if (c.changeColor) {
                 Wire * w = qobject_cast<Wire *>(wire);
-                w->setColor(c.color, 1);
+                if (w) {
+                    if (c.color == QColor(255, 0, 0)) w->setColorString("red", 1, true);
+                    else if (c.color == QColor(0, 0, 0)) w->setColorString("black", 1, true);
+                    updateInfoView();
+                }
+                //w->setColor(c.color, 1);
                 place = ViewLayer::specFromID(w->connector1()->attachedToViewLayerID());
             }
             //p1.first(item) -> id?, p1.second
@@ -577,8 +586,12 @@ void SketchWidget::addSetConnection(QSharedPointer<SetConnection> setconnection,
             foreach(ItemBase * wireI, newWireList) {
                 if (c.changeColor) {
                     Wire * w = qobject_cast<Wire *>(wireI);
-                    w->setColor(c.color, 1);
-
+                    //w->setColor(c.color, 1);
+                    if (w) {
+                        if (c.color == QColor(255, 0, 0)) w->setColorString("red", 1, true);
+                        else if (c.color == QColor(0, 0, 0)) w->setColorString("black", 1, true);
+                        updateInfoView();
+                    }
                 }
                 wireI->setModelSet(to);
                 wireI->setOpacity(wire->opacity());
@@ -1242,6 +1255,8 @@ void SketchWidget::checkMousePressSuggestion(QGraphicsItem * item) {
 }
 
 void SketchWidget::checkSelectSuggestion() {
+    clearSelection();
+    clearHoldingSelectItem();
     if (m_pressItem) {
         AutoCompleter::getSuggestionSet(m_pressItem, this);
         m_pressItem = NULL;
@@ -1283,6 +1298,7 @@ void SketchWidget::checkSelectSuggestion() {
             AutoCompleter::getSuggestionNext(m_pressModelSet, this);
         }
     }
+
 //    //TODO: SET to SET
 //    if (m_pressModelSet->setConnection().isNull()) {
 //        selectModelSet(m_pressModelSet, false);

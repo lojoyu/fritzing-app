@@ -194,22 +194,28 @@ QString ModelSet::getPinType(QString connectorID) {
 
 QList<QPair<ModelSet::Terminal, QString>> ModelSet::getPinTypeTerminal(QString pintype) {
     QList<QPair<Terminal, QString>> terminalList;
-
+    QList<QPair<Terminal, QString>> terminalListLater;
+    bool later = false;
     foreach(QString terminalName, m_terminalType.keys()) {
         // terminal type, terminal name
         QString pinGet = pinEqual(pintype, m_terminalType[terminalName]);
         if (pinGet != "") {
+            later = false;
+            if (pintype != m_terminalType[terminalName]) later = true;
             if (m_terminalnameHash.contains(terminalName)) {
                 if (isMicrocontroller()) {
                     foreach(Terminal t, m_terminalnameHash[terminalName]) {
-                        terminalList.append(QPair<ModelSet::Terminal, QString>(t, pinGet));
+                        if (later) terminalListLater.append(QPair<ModelSet::Terminal, QString>(t, pinGet));
+                        else terminalList.append(QPair<ModelSet::Terminal, QString>(t, pinGet));
                     }
                 } else {
-                    terminalList.append(QPair<ModelSet::Terminal, QString>(m_terminalnameHash[terminalName][0], pinGet));
+                    if (later) terminalListLater.append(QPair<ModelSet::Terminal, QString>(m_terminalnameHash[terminalName][0], pinGet));
+                    else terminalList.append(QPair<ModelSet::Terminal, QString>(m_terminalnameHash[terminalName][0], pinGet));
                 }
             }
         }
     }
+    terminalList.append(terminalListLater);
     return terminalList;    
 }
 

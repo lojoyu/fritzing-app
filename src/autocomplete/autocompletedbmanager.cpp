@@ -189,7 +189,7 @@ QList<QMap<QString, QVariant> *> AutocompleteDBManager::selectModelSet(QString m
     "INNER JOIN %4 c "
     "on m.%5=c.id "
     "WHERE c.module_fid = '%7' \n"
-    "ORDER BY m.%6 DESC, m.id, mc.id").arg(modulescomponents["TABLE"]).arg(modules["TABLE"])
+    "ORDER BY m.%6 DESC, m.id, mc.id, mc.component_terminal, mc.to_component_terminal").arg(modulescomponents["TABLE"]).arg(modules["TABLE"])
             .arg(modulescomponents["MODULE_ID"]).arg(components["TABLE"])
             .arg(modules["COMPONENT_ID"])
             .arg(modules["COUNT"]).arg(moduleID);
@@ -468,7 +468,7 @@ QList<QMap<QString, QVariant> *> AutocompleteDBManager::selectModelSetsByID(QLis
     "INNER JOIN modules m ON m.id=mc.module_id "
     "INNER JOIN components c ON c.id=m.component_id "
     "WHERE mc.module_id IN (%1) "
-    "ORDER BY %2").arg(valueStr).arg(orderStr);
+    "ORDER BY %2, mc.component_terminal, mc.to_component_terminal").arg(valueStr).arg(orderStr);
 
     QSqlQuery query(m_database);
     query.prepare(queryStr);
@@ -493,7 +493,7 @@ QList<QMap<QString, QVariant> *> AutocompleteDBManager::selectModelSetsByID(QLis
 QMap<QString, QVariant> * AutocompleteDBManager::selectModelSetByID(long id) {
 	QMap<QString, QVariant> * map = new QMap<QString, QVariant>();
     QString queryStr = QString("SELECT * FROM modules_components "
-    "WHERE id=%1 ").arg(id);
+    "WHERE id=%1 ORDER BY component_terminal, to_component_terminal").arg(id);
 
     QSqlQuery query(m_database);
     query.prepare(queryStr);
