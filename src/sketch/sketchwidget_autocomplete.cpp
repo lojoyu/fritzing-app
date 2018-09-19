@@ -961,11 +961,11 @@ ItemBase * SketchWidget::addSetItem(ItemBase * fromItem, const QString & fromCon
 			QPointF offset(0, 0);
             QPointF terminalOffset = toPos-toConnectorPos;
             QPointF fromCenter = fromItem->getViewGeometry().loc()+fromItem->boundingRect().center();
-            if (fromCenter.x()- fromOverPos.x() > 0) {
-                offset.setX(-27);
-			} else {
-                offset.setX(27);
-			}
+//            if (fromCenter.x()- fromOverPos.x() > 0) {
+//                offset.setX(-27);
+//			} else {
+//                offset.setX(27);
+//			}
             offset.setY(9);
 			toItem->setPos(fromOverPos+terminalOffset+offset);
         }
