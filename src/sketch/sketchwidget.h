@@ -838,6 +838,8 @@ protected:
     void updateModelSetPos(QPoint pos);
     Wire* squareWire(ItemBase* wireItem, QPointF newPos);
     QList<ItemBase *> arrangeWire(ItemBase* wireItem, ItemBase * fromItem, const QString & fromConnectorID, ItemBase * toItem, const QString & toConnectorID);
+    QList<ItemBase *> arrangeWireCurve(ItemBase* wireItem, ItemBase * fromItem, const QString & fromConnectorID, ItemBase * toItem, const QString & toConnectorID);
+
     ConnectorArrange getConnectorArrange(ItemBase * itemBase, QPointF point);
     bool isLeft(QPointF p1, QPointF p2, QPointF pin);
     double fRand(double fMin, double fMax);

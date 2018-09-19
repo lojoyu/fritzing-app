@@ -2321,8 +2321,8 @@ void SketchWidget::mousePressEvent(QMouseEvent *event)
 		// for example, by shift-clicking a connectorItem
 		return;
 	}
-    checkMousePressSuggestion(item);
     unsquashShapes();
+    checkMousePressSuggestion(item);
 
 	if (item == NULL) {
 		if (items.length() == 1) {
@@ -2417,7 +2417,7 @@ void SketchWidget::mousePressEvent(QMouseEvent *event)
 
 	    m_moveReferenceItem = m_savedItems.count() > 0 ? m_savedItems.values().at(0) : NULL;
 
-	    setupAutoscroll(true);
+        setupAutoscroll(true);
 		
     }
 
@@ -2426,6 +2426,7 @@ void SketchWidget::mousePressEvent(QMouseEvent *event)
 }
 
 void SketchWidget::prepMove(ItemBase * originatingItem, bool rubberBandLegEnabled, bool includeRatsnest) {
+
     m_originatingItem = originatingItem;
 	m_rubberBandLegWasEnabled = rubberBandLegEnabled;
 	m_checkUnder.clear();

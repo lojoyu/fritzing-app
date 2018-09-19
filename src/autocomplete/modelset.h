@@ -113,6 +113,7 @@ public:
     void setMicrocontroller();
     QSharedPointer<SetConnection> getSetConnectionWithModelSet(QSharedPointer<ModelSet> modelset);
     QList<QPair<QString, QString>> getConnectedPairWithModelSet(QSharedPointer<ModelSet> modelSet);
+    QList<QPair<QString, QString>> getConnectedPair();
     QSet<QString> getConnectedNameWithModelSet(QSharedPointer<ModelSet> modelSet);
     void setCount(int count);
     int count();

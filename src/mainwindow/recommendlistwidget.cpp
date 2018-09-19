@@ -102,11 +102,11 @@ void RecommendListWidget::onItemEvent(QListWidgetItem* listitem, bool hover) {
     } else {
 
         bool connection = type == SuggestionType::setToSet ? false : true;
-        QVariantList tList = itemDataV[3].value<QVariantList>();
-        m_tutorial->clear();
 
         m_sketchwidget->selectSetToSet(itemDataV[1].value<QSharedPointer<ModelSet>>(), itemDataV[2].value<QSharedPointer<SetConnection>>(), connection, hover) ;
 
+        QVariantList tList = itemDataV[3].value<QVariantList>();
+        m_tutorial->clear();
         for (int i = 0 ; i < tList.length() ; i++) {
             QString str = tList[i].value<QString>();
             QLabel * label = new QLabel();
@@ -144,8 +144,8 @@ void RecommendListWidget::setTosetList(QList<QSharedPointer<ModelSet>> toModelse
         if (!connection) itemData.append(QVariant(SuggestionType::setToSet));
         else itemData.append(QVariant(SuggestionType::connection));
         itemData.append(QVariant::fromValue(toModelsetList[i]));
-        itemData.append(QVariant::fromValue(setConnectionList[i]));
-
+        if (setConnectionList.length() > i) itemData.append(QVariant::fromValue(setConnectionList[i]));
+        else itemData.append(QVariant::fromValue(QSharedPointer<SetConnection>(NULL)));
         QVariantList variantList;
         if (tutorialLink.length() > i) {
             foreach(QString str, *(tutorialLink[i])) {

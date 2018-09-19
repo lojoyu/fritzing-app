@@ -381,6 +381,24 @@ QList<QPair<QString, QString>> ModelSet::getConnectedPairWithModelSet(QSharedPoi
     return connectedPairList;
 }
 
+QList<QPair<QString, QString>> ModelSet::getConnectedPair() {
+
+    QList<QPair<QString, QString>> connectedPairList;
+    foreach(QSharedPointer<SetConnection> s, m_fromSetConnectionList) {
+        QList<SetConnection::Connection> connection = s->getConnectionList();
+        foreach(SetConnection::Connection c, connection) {
+            connectedPairList.append(QPair<QString, QString>(c.fromTerminal, c.toTerminal));
+        }
+    }
+    foreach(QSharedPointer<SetConnection> s, m_toSetConnectionList) {
+        QList<SetConnection::Connection> connection = s->getConnectionList();
+        foreach(SetConnection::Connection c, connection) {
+            connectedPairList.append(QPair<QString, QString>(c.fromTerminal, c.toTerminal));
+        }
+    }
+    return connectedPairList;
+}
+
 void ModelSet::setCount(int count) {
     m_count = count;
 }

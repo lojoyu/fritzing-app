@@ -24,6 +24,7 @@ void MainWindow::initRecommendList(SketchWidget * sketchWidget){
     RecommendListWidget * m_recommendlist = new RecommendListWidget(sketchWidget, m_referenceModel, m_tutorial);
     m_recommendlist->setMouseTracking(true) ;
     m_recommendlist->setViewMode(QListWidget::IconMode);
+    m_recommendlist->setStyleSheet("QListWidget::Item:hover{background:#d8d8d8;}");
     makeDock(tr("Recommand List"), m_recommendlist, 30, 30);
 
     // connect(m_recommendlist, SIGNAL(itemEntered(QListWidgetItem*)),
