@@ -1170,17 +1170,12 @@ ItemBase * SketchWidget::addSetItem(ItemBase * fromItem, const QString & fromCon
                 if (fromItem->moduleID() == "5mmColorLEDModuleID") {
                     offset.setY(9);
                 }
-
-
-
-
-
-
-
-
-
-
-
+            }
+            if (fromItem->title() == "LCD screen") {
+                if (toItem->title() == "Rotary Potentiometer (Small)") {
+                    offset.setY(-81);
+                    offset.setX(-45);
+                }
 
 
             }
@@ -1518,8 +1513,7 @@ void SketchWidget::checkMousePressSuggestion(QGraphicsItem * item) {
 }
 
 void SketchWidget::checkSelectSuggestion() {
-    clearSelection();
-    clearHoldingSelectItem();
+
 
     if (m_pressItem) {
 

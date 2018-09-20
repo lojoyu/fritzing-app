@@ -117,6 +117,8 @@ public:
     QSet<QString> getConnectedNameWithModelSet(QSharedPointer<ModelSet> modelSet);
     void setCount(int count);
     int count();
+    //void setSupportModuleID(QString supportModuleID);
+    //QString supportModuleID();
 
 
 protected:
@@ -144,6 +146,7 @@ protected:
     QHash<ItemBase *, TerminalPair> m_wireConnection;
     bool m_isMicrocontroller;
     int m_count;
+    //QString m_supprotModuleID;
 
 };
 

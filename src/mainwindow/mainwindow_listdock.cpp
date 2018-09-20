@@ -19,13 +19,14 @@ void MainWindow::initRecommendList(SketchWidget * sketchWidget){
     //m_sketchwidget = sketchWidget ;
     //m_recommendlist = new QListWidget ;
     QListWidget * m_tutorial = new QListWidget();
-    makeDock(tr("Tutorial"), m_tutorial, 30, 30);
+    makeDock(tr("Source Projects"), m_tutorial, 30, 30);
 
     RecommendListWidget * m_recommendlist = new RecommendListWidget(sketchWidget, m_referenceModel, m_tutorial);
     m_recommendlist->setMouseTracking(true) ;
     m_recommendlist->setViewMode(QListWidget::IconMode);
     m_recommendlist->setStyleSheet("QListWidget::Item:hover{background:#d8d8d8;}");
-    makeDock(tr("Recommand List"), m_recommendlist, 30, 30);
+    makeDock(tr("Autocomplete Suggestions"), m_recommendlist, 30, 30);
+
 
     // connect(m_recommendlist, SIGNAL(itemEntered(QListWidgetItem*)),
     //                    this, SLOT(onItemEnteredSlot(QListWidgetItem*)));

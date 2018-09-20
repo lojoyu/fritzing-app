@@ -303,9 +303,9 @@ void AutoCompleter::getSuggestionNextSelf(QSharedPointer<ModelSet> modelset, Ske
     //QList<QMap<QString, QVariant> *> connectionList = AutocompleteDBManager::getConnectionsByID(idList);
     QList<QMap<QString, QVariant> *> modelsetMapList = AutocompleteDBManager::getModelSetsByID(moduleList);
     QList<QList<QString> *> tutorialList = AutocompleteDBManager::getTutorialList(idList, 20, true);
-    QList<int> countList = AutocompleteDBManager::getCountFromConnections(idList, true, false);
+    QList<int> countList = AutocompleteDBManager::getCountFromConnections(idList, true, false, nameList);
     mapListToModelSet(NULL, sketchWidget, modelsetMapList, toModelsetList);
-    expandModelSetList(moduleList, toModelsetList);
+    //expandModelSetList(moduleList, toModelsetList);
     //mapListToSetConnection(modelset, toModelsetList, connectionList, setConnectionList, true);
     //qDeleteAll(connectionList);
     qDeleteAll(modelsetMapList);

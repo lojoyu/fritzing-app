@@ -45,12 +45,15 @@ protected:
 
     void onItemEvent(QListWidgetItem*, bool);
     void loadImage(ModelPart * modelPart, QListWidgetItem * lwi);
+    void loadImage(QString filePath, QListWidgetItem * lwi);
 
 protected:
     SketchWidget * m_sketchwidget;
     QPointer<ReferenceModel> m_referenceModel;
     QPoint m_startPoint;
     QListWidget * m_tutorial;
+    QString m_modelSetImgPath;
+    QString m_connectionImgPath;
 
 };
 

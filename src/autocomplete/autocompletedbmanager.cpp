@@ -170,6 +170,14 @@ QList<int> AutocompleteDBManager::getCountFromConnections(QList<long> ids, bool 
     return singleton->selectCountFromConnections(ids, sameModelset, sum);
 }
 
+QList<int> AutocompleteDBManager::getCountFromConnections(QList<long> ids, bool sameModelset, bool sum, QList<QString> nameList) {
+    if (singleton == NULL) {
+        singleton = new AutocompleteDBManager(defaultname);
+    }
+    return singleton->selectCountFromConnections(ids, sameModelset, sum, nameList);
+}
+
+
 
 /*
 AutocompleteDBManager::getNextSet(QString title) {
@@ -354,6 +362,81 @@ QList<int> AutocompleteDBManager::selectCountFromConnections(QList<long> ids, bo
 
     }
 
+    QSqlQuery query(m_database);
+    query.prepare(queryStr);
+    //query.bindValue(":values",valueStr);
+    if (query.exec()) {
+        while(query.next()) {
+            countList.append(query.value(0).toInt());
+        }
+
+    } else {
+        m_debugExec(QString("couldn't find connection of %1").arg(valueStr), query);
+    }
+    return countList;
+
+}
+
+QList<int> AutocompleteDBManager::selectCountFromConnections(QList<long> ids, bool sameModelset, bool sum, QList<QString> nameList) {
+    QList<int> countList;
+    QString valueStr = "";
+    QString orderStr = "";
+    int ind = 1;
+    foreach(long id, ids) {
+        if (ind != 1) {
+            valueStr += ",";
+            orderStr += ",";
+        }
+        valueStr += QString("%1").arg(id);
+        if (!sameModelset) orderStr += QString("c.id=%1 DESC").arg(id);
+        else orderStr += QString("x.id=%1 DESC").arg(id);
+        ind++;
+    }
+
+    QString excludeStr = "";
+    ind = 1;
+    foreach(QString name, nameList) {
+        if (ind != 1) {
+            excludeStr += ",";
+        }
+        excludeStr += QString("'%1'").arg(name);
+        ind++;
+    }
+    if (excludeStr != "") {
+        QString s = QString("AND c.id NOT IN "
+        "(SELECT DISTINCT(connection_id) FROM terminals_connections "
+        "WHERE terminal_id IN (%3))").arg(excludeStr);
+        excludeStr = s;
+    }
+    DebugDialog::debug(valueStr);
+    DebugDialog::debug(orderStr);
+
+    QString queryStr;
+    if (sum) {
+        queryStr = QString("SELECT SUM(c.count) FROM connections c "
+                           "INNER JOIN ( "
+                           "SELECT * FROM connections WHERE id in (%1) "
+                           ") AS x "
+                           "ON x.module_id = c.module_id AND x.to_module_id = c.to_module_id %3 "
+                           "GROUP BY c.module_id "
+                           "ORDER BY %2").arg(valueStr).arg(orderStr).arg(excludeStr);
+
+    } else if (!sameModelset) {
+        queryStr = QString("SELECT c.count FROM connections c "
+                            "WHERE c.id IN (%1) "
+                            "ORDER BY %2").arg(valueStr).arg(orderStr);
+    } else {
+        queryStr = QString("SELECT SUM(c.count) FROM connections c "
+                           "INNER JOIN ( "
+                           "SELECT * FROM connections WHERE id in (%1) "
+                           ") AS x "
+                           "ON x.module_id = c.module_id AND x.to_module_id = c.to_module_id %3 "
+                           "GROUP BY c.module_id, c.to_module_id "
+                           "ORDER BY %2").arg(valueStr).arg(orderStr).arg(excludeStr);
+
+    }
+
+    DebugDialog::debug(QString("%1").arg(queryStr));
     QSqlQuery query(m_database);
     query.prepare(queryStr);
     //query.bindValue(":values",valueStr);

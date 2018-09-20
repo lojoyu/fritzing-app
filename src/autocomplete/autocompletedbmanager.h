@@ -23,6 +23,7 @@ class AutocompleteDBManager {
         static QList<QList<QString> *> getTutorialList(QList<long> ids, int max);
         static QList<QList<QString> *> getTutorialList(QList<long> ids, int max, bool sameModelset);
         static QList<int> getCountFromConnections(QList<long> ids, bool sameModelset, bool sum);
+        static QList<int> getCountFromConnections(QList<long> ids, bool sameModelset, bool sum, QList<QString> nameList);
 
 
 	protected:
@@ -38,6 +39,7 @@ class AutocompleteDBManager {
         QList<QList<QString> *> selectTutorialList(QList<long> ids, int max);
         QList<QList<QString> *> selectTutorialList(QList<long> ids, int max, bool sameModelSet);
         QList<int> selectCountFromConnections(QList<long> ids, bool sameModelset, bool sum);
+        QList<int> selectCountFromConnections(QList<long> ids, bool sameModelset, bool sum, QList<QString> nameList);
 
 		void deleteConnection();
 

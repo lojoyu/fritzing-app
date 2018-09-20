@@ -12,6 +12,7 @@
 #include "../fsvgrenderer.h"
 #include "../infoview/htmlinfoview.h"
 #include "../debugdialog.h"
+#include "../items/moduleidnames.h"
 
 static QString BlackStar("★");
 static QString WhiteStar("☆");
@@ -36,6 +37,9 @@ RecommendListWidget::RecommendListWidget(SketchWidget * sketchWidget, QPointer<R
                        this, SLOT(setTosetList(QList<QSharedPointer<ModelSet>>, QList<QSharedPointer<SetConnection>>, QList<QList<QString> *>, QList<double>, bool))) ;
 
     connect(autocompleter, SIGNAL(clearRecommendListSignal()), this, SLOT(clearList()));
+
+    m_modelSetImgPath = "/Users/lojoyu/Desktop/fritzing_a1_icon.png";
+   // m_connectionImgPath
 }
 
 void RecommendListWidget::mousePressEvent(QMouseEvent *event) {
@@ -153,8 +157,11 @@ void RecommendListWidget::setTosetList(QList<QSharedPointer<ModelSet>> toModelse
             }
         }
         itemData.append(QVariant::fromValue(variantList));
+        QString mid;
+        if (connection) mid = ModuleIDNames::WireModuleIDName;
+        else mid = toModelsetList[i]->keyModuleID();
 
-        ModelPart * modelPart = m_referenceModel->retrieveModelPart(toModelsetList[i]->keyModuleID());
+        ModelPart * modelPart = m_referenceModel->retrieveModelPart(mid);
         loadImage(modelPart, item);
         item->setData(Qt::UserRole, itemData);
         item->setSizeHint(QSize(50,60));
@@ -190,8 +197,9 @@ void RecommendListWidget::setModelSetList(QList<QSharedPointer<ModelSet>> modelS
         QVariantList itemData;
         itemData.append(QVariant(SuggestionType::toModelSet));
         itemData.append(QVariant::fromValue(modelSetList[i]));
-        ModelPart * modelPart = m_referenceModel->retrieveModelPart(modelSetList[i]->keyModuleID());
-        loadImage(modelPart,item);
+        //ModelPart * modelPart = m_referenceModel->retrieveModelPart(modelSetList[i]->keyModuleID());
+        //loadImage(modelPart,item);
+        loadImage(m_modelSetImgPath, item);
         item->setData(Qt::UserRole, itemData);
         item->setSizeHint(QSize(50,60));
         double percentage = percentageList[i];
@@ -244,5 +252,14 @@ void RecommendListWidget::loadImage(ModelPart * modelPart, QListWidgetItem * lwi
     lwi->setIcon(QIcon(*pixmap));
     delete pixmap;
     lwi->setData(Qt::UserRole + 1, itemBase->renderer()->defaultSize());
+
+}
+
+void RecommendListWidget::loadImage(QString filePath, QListWidgetItem * lwi)
+{
+    QSize size(HtmlInfoView::STANDARD_ICON_IMG_WIDTH, HtmlInfoView::STANDARD_ICON_IMG_HEIGHT);
+    QPixmap pixmap = QPixmap(filePath);
+    lwi->setIcon(QIcon(pixmap));
+    //lwi->setData(Qt::UserRole + 1, itemBase->renderer()->defaultSize());
 
 }
